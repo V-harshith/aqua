@@ -456,6 +456,12 @@ export const ProductManagerDashboard: React.FC = () => {
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="space-y-2">
             <Button 
+              onClick={() => window.location.href = '/products'}
+              className="w-full bg-blue-600 hover:bg-blue-700"
+            >
+              🏭 Product Management
+            </Button>
+            <Button 
               onClick={() => window.location.href = '/products/new'}
               className="w-full bg-green-600 hover:bg-green-700"
             >
@@ -463,7 +469,7 @@ export const ProductManagerDashboard: React.FC = () => {
             </Button>
             <Button 
               onClick={() => window.location.href = '/inventory/restock'}
-              className="w-full bg-blue-600 hover:bg-blue-700"
+              className="w-full bg-orange-600 hover:bg-orange-700"
             >
               📈 Restock Inventory
             </Button>

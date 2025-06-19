@@ -6,6 +6,7 @@ import { RoleGuard } from '@/components/auth/RoleGuard';
 import ComplaintForm from '@/components/complaints/ComplaintForm';
 import ComplaintsList from '@/components/complaints/ComplaintsList';
 import Button from '@/components/ui/Button';
+import { Card, CardContent } from '@/components/ui/Card';
 
 export default function ComplaintsPage() {
   const { userProfile, canManageComplaints } = useAuthContext();
@@ -15,6 +16,11 @@ export default function ComplaintsPage() {
   const handleFormSuccess = () => {
     setShowForm(false);
     setRefreshKey(prev => prev + 1); // Trigger refresh of complaints list
+  };
+
+  const handleSubmit = async () => {
+    // Handle form submission
+    handleFormSuccess();
   };
 
   const isCustomer = userProfile?.role === 'customer';
@@ -72,10 +78,13 @@ export default function ComplaintsPage() {
             {/* Complaint Form (for customers or when staff needs to add) */}
             {showForm && (
               <div className="mb-8">
-                <ComplaintForm 
-                  onSubmitSuccess={handleFormSuccess}
-                  onCancel={() => setShowForm(false)}
-                />
+                <Card>
+                  <CardContent className="p-6">
+                    <ComplaintForm 
+                      onSubmit={handleSubmit}
+                    />
+                  </CardContent>
+                </Card>
               </div>
             )}
 

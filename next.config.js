@@ -18,7 +18,7 @@ const nextConfig = {
     ignoreBuildErrors: false,
   },
   eslint: {
-    ignoreDuringBuilds: true, // Allow deployment despite lint warnings
+    ignoreDuringBuilds: true,
   },
   // PWA configuration
   ...(process.env.NODE_ENV === 'production' && {

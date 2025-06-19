@@ -1,26 +1,22 @@
 'use client';
 
-import { RoleGuard } from '@/components/auth/RoleGuard';
 import { EnhancedAdminDashboard } from '@/components/dashboard/EnhancedAdminDashboard';
+import { RoleGuard } from '@/components/auth/RoleGuard';
 
 export default function AdminDashboardPage() {
   return (
-    <RoleGuard 
-      allowedRoles={['admin', 'dept_head']}
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">
-              Access Denied
-            </h2>
-            <p className="text-gray-600">
-              You don't have permission to access the admin dashboard.
+    <RoleGuard allowedRoles={['admin', 'dept_head']}>
+      <div className="min-h-screen bg-gray-50">
+        <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
+          <div className="mb-8">
+            <h1 className="text-3xl font-bold text-gray-900">Admin Dashboard</h1>
+            <p className="text-gray-600 mt-2">
+              Comprehensive system overview and management tools
             </p>
           </div>
+          <EnhancedAdminDashboard />
         </div>
-      }
-    >
-      <EnhancedAdminDashboard />
+      </div>
     </RoleGuard>
   );
 } 

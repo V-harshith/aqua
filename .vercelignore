@@ -1,0 +1,17 @@
+node_modules
+.git
+.env.local
+.env
+*.log
+.DS_Store
+*.md
+task-magic
+database_migrations
+debug_*.sql
+fix_*.sql
+safe_*.sql
+AUTHENTICATION_FIX_INSTRUCTIONS.md
+DATABASE_SETUP.md
+ENVIRONMENT_SETUP.md
+SUPABASE_SETUP.md
+userinput.py 

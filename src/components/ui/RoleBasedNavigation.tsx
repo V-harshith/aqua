@@ -106,6 +106,13 @@ const navigationItems: NavItem[] = [
     icon: '📈',
     description: 'Analytics and reports',
     roles: ['admin', 'dept_head', 'service_manager', 'accounts_manager', 'driver_manager', 'product_manager']
+  },
+  {
+    label: 'Notifications',
+    href: '/notifications',
+    icon: '🔔',
+    description: 'Real-time notifications and alerts',
+    roles: ['admin', 'dept_head', 'service_manager', 'accounts_manager', 'product_manager', 'driver_manager', 'technician', 'customer']
   }
 ];
 

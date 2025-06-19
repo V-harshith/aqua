@@ -24,6 +24,13 @@ const navigationItems: NavItem[] = [
     roles: ['admin', 'dept_head', 'driver_manager', 'service_manager', 'accounts_manager', 'product_manager', 'technician', 'customer']
   },
   {
+    label: 'Admin Dashboard',
+    href: '/admin/dashboard',
+    icon: '🎛️',
+    description: 'Enhanced admin control panel',
+    roles: ['admin', 'dept_head']
+  },
+  {
     label: 'Admin Panel',
     href: '/admin',
     icon: '⚙️',
@@ -57,6 +64,13 @@ const navigationItems: NavItem[] = [
     icon: '🔧',
     description: 'Service requests and schedules',
     roles: ['admin', 'dept_head', 'service_manager', 'dispatcher', 'technician', 'customer']
+  },
+  {
+    label: 'Service Assignment',
+    href: '/services/assignment',
+    icon: '📋',
+    description: 'Assign technicians to service requests',
+    roles: ['admin', 'dept_head', 'service_manager']
   },
   {
     label: 'Driver Management',

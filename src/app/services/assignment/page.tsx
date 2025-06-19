@@ -14,7 +14,7 @@ export default function ServiceAssignmentPage() {
               Access Denied
             </h2>
             <p className="text-gray-600">
-              You don't have permission to access service assignment.
+              You don&apos;t have permission to access service assignment.
             </p>
           </div>
         </div>

@@ -73,7 +73,9 @@ export default function DashboardPage() {
             <div className="text-center bg-white p-8 rounded-lg shadow">
               <div className="text-red-600 text-4xl mb-4">🚫</div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-              <p className="text-gray-600">Your role ({userProfile.role}) doesn't have dashboard access.</p>
+              <p className="text-gray-600">
+                You don&apos;t have access to this dashboard.
+              </p>
               <button
                 onClick={handleSignOut}
                 className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"

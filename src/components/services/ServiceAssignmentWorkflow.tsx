@@ -29,13 +29,11 @@ interface Technician {
 }
 
 export const ServiceAssignmentWorkflow: React.FC = () => {
-  const { user } = useAuth();
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
-  const [isLoading, setIsLoading] = useState(false);
-  const [showAssignForm, setShowAssignForm] = useState(false);
   const [selectedRequest, setSelectedRequest] = useState<ServiceRequest | null>(null);
-
+  const [showAssignForm, setShowAssignForm] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   const [assignmentForm, setAssignmentForm] = useState({
     technician_id: '',
     scheduled_date: '',
@@ -61,7 +59,7 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
           priority,
           status,
           location,
-          customer:customers(contact_person)
+          customers!customer_id(contact_person)
         `)
         .eq('status', 'open')
         .order('priority', { ascending: false });
@@ -80,7 +78,7 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
         problem_description: req.description,
         status: req.status,
         customer: {
-          first_name: req.customer?.contact_person || 'Unknown',
+          first_name: (req.customers?.[0]?.contact_person as string) || 'Unknown',
           last_name: ''
         }
       })) || [];

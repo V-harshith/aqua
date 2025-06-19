@@ -3,9 +3,11 @@
 import { createContext, useContext, ReactNode } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { User, Session } from '@supabase/supabase-js';
+import { UserRole, User as WaterUser } from '@/lib/supabase';
 
 type AuthContextType = {
   user: User | null;
+  userProfile: WaterUser | null;
   session: Session | null;
   loading: boolean;
   signUp: (email: string, password: string) => Promise<{
@@ -23,6 +25,20 @@ type AuthContextType = {
     data: any;
     error: any;
   }>;
+  updateProfile: (updates: Partial<WaterUser>) => Promise<{
+    data?: any;
+    error?: any;
+  }>;
+  // Role checking functions
+  hasRole: (role: UserRole) => boolean;
+  hasAnyRole: (roles: UserRole[]) => boolean;
+  isAdmin: () => boolean;
+  isManager: () => boolean;
+  canManageUsers: () => boolean;
+  canManageComplaints: () => boolean;
+  canManageServices: () => boolean;
+  canManageVehicles: () => boolean;
+  canViewDashboard: () => boolean;
 };
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);

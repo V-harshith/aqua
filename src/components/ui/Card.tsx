@@ -9,7 +9,7 @@ interface CardProps {
   headerAction?: ReactNode;
 }
 
-export default function Card({
+export function Card({
   children,
   className = '',
   title,

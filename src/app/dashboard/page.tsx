@@ -3,57 +3,135 @@
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
+import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
+import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard';
+import { ManagerDashboard } from '@/components/dashboard/ManagerDashboard';
+import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
+import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
 
-export default function Dashboard() {
-  const { user, loading, signOut } = useAuthContext();
+export default function DashboardPage() {
+  const { user, userProfile, loading, signOut } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    // If not loading and no user, redirect to sign in
+    // Simple client-side auth check
     if (!loading && !user) {
+      console.log('🏠 No user found, redirecting to signin');
       router.push('/signin');
     }
   }, [user, loading, router]);
 
   const handleSignOut = async () => {
+    console.log('🚪 Signing out...');
     await signOut();
     router.push('/signin');
   };
 
-  // Show loading state while checking authentication
+  // Role-based dashboard rendering
+  const renderRoleBasedDashboard = () => {
+    if (!userProfile) {
+      return (
+        <div className="min-h-screen flex items-center justify-center bg-gray-50">
+          <div className="text-center bg-white p-8 rounded-lg shadow">
+            <div className="text-amber-600 text-4xl mb-4">⚠️</div>
+            <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile Not Found</h2>
+            <p className="text-gray-600">Unable to load your user profile. Please contact administrator.</p>
+            <button
+              onClick={handleSignOut}
+              className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+            >
+              Sign Out & Try Again
+            </button>
+          </div>
+        </div>
+      );
+    }
+
+    // Render dashboard based on user role
+    switch (userProfile.role) {
+      case 'admin':
+        return <AdminDashboard />;
+      case 'customer':
+        return <CustomerDashboard />;
+      case 'dept_head':
+      case 'service_manager':
+      case 'accounts_manager':
+      case 'product_manager':
+      case 'driver_manager':
+        return <ManagerDashboard />;
+      case 'technician':
+        return <TechnicianDashboard />;
+      default:
+        return (
+          <div className="min-h-screen flex items-center justify-center bg-gray-50">
+            <div className="text-center bg-white p-8 rounded-lg shadow">
+              <div className="text-red-600 text-4xl mb-4">🚫</div>
+              <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
+              <p className="text-gray-600">Your role ({userProfile.role}) doesn't have dashboard access.</p>
+              <button
+                onClick={handleSignOut}
+                className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        );
+    }
+  };
+
   if (loading) {
     return (
-      <div className="flex min-h-screen items-center justify-center">
-        <p className="text-lg">Loading...</p>
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-2 text-gray-600">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (!user) {
+    return (
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-600">Redirecting to sign in...</p>
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen p-8">
-      <div className="max-w-4xl mx-auto">
-        <div className="flex justify-between items-center mb-8">
-          <h1 className="text-3xl font-bold">Dashboard</h1>
-          <button
-            onClick={handleSignOut}
-            className="px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2"
-          >
-            Sign Out
-          </button>
+    <div className="min-h-screen bg-gray-50">
+      {/* Header with Sign Out */}
+      <div className="bg-white shadow">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+          <div className="flex justify-between items-center py-4">
+            <div className="flex items-center">
+              <span className="text-2xl mr-2">💧</span>
+              <span className="text-xl font-bold text-blue-600">Project Aqua</span>
+              {userProfile && (
+                <span className="ml-4 text-sm text-gray-600">
+                  Welcome, {userProfile.full_name}
+                </span>
+              )}
+            </div>
+            <button
+              onClick={handleSignOut}
+              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
+            >
+              Sign Out
+            </button>
+          </div>
         </div>
+      </div>
 
-        <div className="bg-white shadow rounded-lg p-6">
-          <h2 className="text-xl font-semibold mb-4">Welcome to Project Aqua</h2>
-          <div className="mb-4">
-            <p className="text-gray-700">You are signed in as:</p>
-            <p className="font-medium">{user?.email}</p>
-          </div>
-          <div className="border-t pt-4">
-            <p className="text-gray-600">
-              This is a protected dashboard page that only authenticated users can access.
-            </p>
-          </div>
-        </div>
+      {/* Navigation */}
+      <DashboardNavigation />
+
+      {/* Role-based Dashboard Content */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+        {renderRoleBasedDashboard()}
       </div>
     </div>
   );

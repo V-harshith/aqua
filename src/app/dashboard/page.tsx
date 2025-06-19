@@ -8,6 +8,7 @@ import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard';
 import { ManagerDashboard } from '@/components/dashboard/ManagerDashboard';
 import { ServiceManagerDashboard } from '@/components/dashboard/ServiceManagerDashboard';
 import { AccountsManagerDashboard } from '@/components/dashboard/AccountsManagerDashboard';
+import { ProductManagerDashboard } from '@/components/dashboard/ProductManagerDashboard';
 import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
 import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
 
@@ -56,13 +57,14 @@ export default function DashboardPage() {
       case 'customer':
         return <CustomerDashboard />;
       case 'dept_head':
-      case 'product_manager':
       case 'driver_manager':
         return <ManagerDashboard />;
       case 'service_manager':
         return <ServiceManagerDashboard />;
       case 'accounts_manager':
         return <AccountsManagerDashboard />;
+      case 'product_manager':
+        return <ProductManagerDashboard />;
       case 'technician':
         return <TechnicianDashboard />;
       default:

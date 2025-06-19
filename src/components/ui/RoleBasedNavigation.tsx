@@ -73,6 +73,13 @@ const navigationItems: NavItem[] = [
     roles: ['admin', 'dept_head', 'service_manager']
   },
   {
+    label: 'Water Distribution',
+    href: '/distribution',
+    icon: '🚚',
+    description: 'Water distribution management',
+    roles: ['admin', 'dept_head', 'driver_manager']
+  },
+  {
     label: 'Driver Management',
     href: '/driver',
     icon: '🚛',
@@ -174,27 +181,21 @@ export function SidebarNavigation() {
 
   return (
     <div className="flex flex-col h-full bg-white border-r border-gray-200">
-      {/* User info */}
+      {/* Header */}
       <div className="p-4 border-b border-gray-200">
-        <div className="flex items-center">
-          <div className="w-10 h-10 bg-blue-100 rounded-full flex items-center justify-center">
-            <span className="text-blue-600 font-semibold text-lg">
-              {userProfile.full_name.charAt(0).toUpperCase()}
-            </span>
+        <div className="flex items-center space-x-3">
+          <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+            <span className="text-white font-bold">💧</span>
           </div>
-          <div className="ml-3">
-            <p className="text-sm font-medium text-gray-900">
-              {userProfile.full_name}
-            </p>
-            <p className="text-xs text-gray-500 capitalize">
-              {userProfile.role.replace('_', ' ')}
-            </p>
+          <div>
+            <h1 className="text-lg font-bold text-gray-900">Aqua Management</h1>
+            <p className="text-xs text-gray-500 capitalize">{userProfile.role.replace('_', ' ')}</p>
           </div>
         </div>
       </div>
 
       {/* Navigation */}
-      <div className="flex-1 px-4 py-4">
+      <div className="flex-1 overflow-y-auto p-4">
         <RoleBasedNavigation 
           orientation="vertical" 
           showIcons={true} 
@@ -202,8 +203,22 @@ export function SidebarNavigation() {
         />
       </div>
 
-      {/* Sign out */}
+      {/* User section */}
       <div className="p-4 border-t border-gray-200">
+        <div className="flex items-center space-x-3 mb-3">
+          <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+            <span className="text-sm font-medium text-gray-600">
+              {userProfile.full_name?.charAt(0) || userProfile.email?.charAt(0) || 'U'}
+            </span>
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm font-medium text-gray-900 truncate">
+              {userProfile.full_name || userProfile.email}
+            </p>
+            <p className="text-xs text-gray-500 truncate">{userProfile.email}</p>
+          </div>
+        </div>
+        
         <button
           onClick={() => signOut()}
           className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200"
@@ -216,7 +231,7 @@ export function SidebarNavigation() {
   );
 }
 
-// Header navigation component
+// Header navigation for mobile/compact layouts
 export function HeaderNavigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { userProfile, signOut } = useAuthContext();
@@ -224,24 +239,23 @@ export function HeaderNavigation() {
   if (!userProfile) return null;
 
   return (
-    <header className="bg-white shadow-sm border-b border-gray-200">
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+    <header className="bg-white border-b border-gray-200">
+      <div className="px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
-          <div className="flex items-center">
-            <Link href="/dashboard" className="flex items-center">
-              <span className="text-2xl mr-2">💧</span>
-              <span className="text-xl font-bold text-blue-600">Project Aqua</span>
-            </Link>
+          <div className="flex items-center space-x-3">
+            <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
+              <span className="text-white font-bold">💧</span>
+            </div>
+            <h1 className="text-lg font-bold text-gray-900">Aqua Management</h1>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
             <RoleBasedNavigation 
               orientation="horizontal" 
-              showIcons={false} 
+              showIcons={true} 
               showDescriptions={false}
-              className="items-center"
             />
           </div>
 
@@ -249,30 +263,40 @@ export function HeaderNavigation() {
           <div className="relative">
             <button
               onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="flex items-center text-sm rounded-full focus:outline-none focus:ring-2 focus:ring-blue-500"
+              className="flex items-center space-x-2 p-2 rounded-lg hover:bg-gray-50"
             >
-              <div className="w-8 h-8 bg-blue-100 rounded-full flex items-center justify-center">
-                <span className="text-blue-600 font-semibold">
-                  {userProfile.full_name.charAt(0).toUpperCase()}
+              <div className="w-8 h-8 bg-gray-300 rounded-full flex items-center justify-center">
+                <span className="text-sm font-medium text-gray-600">
+                  {userProfile.full_name?.charAt(0) || userProfile.email?.charAt(0) || 'U'}
                 </span>
               </div>
-              <span className="ml-2 text-gray-700 hidden sm:block">
-                {userProfile.full_name}
+              <span className="text-sm font-medium text-gray-700 hidden sm:block">
+                {userProfile.full_name || userProfile.email}
               </span>
             </button>
 
-            {/* Dropdown Menu */}
             {isMenuOpen && (
-              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 z-50">
-                <div className="py-1">
-                  <div className="px-4 py-2 border-b border-gray-200">
-                    <p className="text-sm font-medium text-gray-900">
-                      {userProfile.full_name}
-                    </p>
-                    <p className="text-xs text-gray-500 capitalize">
-                      {userProfile.role.replace('_', ' ')}
-                    </p>
-                  </div>
+              <div className="absolute right-0 mt-2 w-48 bg-white rounded-lg shadow-lg border border-gray-200 py-1 z-50">
+                <div className="px-4 py-2 border-b border-gray-200">
+                  <p className="text-sm font-medium text-gray-900">
+                    {userProfile.full_name || userProfile.email}
+                  </p>
+                  <p className="text-xs text-gray-500 capitalize">
+                    {userProfile.role.replace('_', ' ')}
+                  </p>
+                </div>
+                
+                {/* Mobile Navigation */}
+                <div className="md:hidden">
+                  <RoleBasedNavigation 
+                    className="px-2 py-2"
+                    orientation="vertical" 
+                    showIcons={true} 
+                    showDescriptions={false}
+                  />
+                </div>
+                
+                <div className="border-t border-gray-200 mt-2">
                   <button
                     onClick={() => {
                       signOut();
@@ -280,37 +304,13 @@ export function HeaderNavigation() {
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
-                    Sign Out
+                    🚪 Sign Out
                   </button>
                 </div>
               </div>
             )}
           </div>
-
-          {/* Mobile menu button */}
-          <div className="md:hidden">
-            <button
-              onClick={() => setIsMenuOpen(!isMenuOpen)}
-              className="text-gray-500 hover:text-gray-700 focus:outline-none"
-            >
-              <span className="sr-only">Open main menu</span>
-              <svg className="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 6h16M4 12h16M4 18h16" />
-              </svg>
-            </button>
-          </div>
         </div>
-
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden border-t border-gray-200 pt-4 pb-4">
-            <RoleBasedNavigation 
-              orientation="vertical" 
-              showIcons={true} 
-              showDescriptions={false}
-            />
-          </div>
-        )}
       </div>
     </header>
   );

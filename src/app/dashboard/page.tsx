@@ -6,6 +6,8 @@ import { useEffect } from 'react';
 import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard';
 import { ManagerDashboard } from '@/components/dashboard/ManagerDashboard';
+import { ServiceManagerDashboard } from '@/components/dashboard/ServiceManagerDashboard';
+import { AccountsManagerDashboard } from '@/components/dashboard/AccountsManagerDashboard';
 import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
 import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
 
@@ -54,11 +56,13 @@ export default function DashboardPage() {
       case 'customer':
         return <CustomerDashboard />;
       case 'dept_head':
-      case 'service_manager':
-      case 'accounts_manager':
       case 'product_manager':
       case 'driver_manager':
         return <ManagerDashboard />;
+      case 'service_manager':
+        return <ServiceManagerDashboard />;
+      case 'accounts_manager':
+        return <AccountsManagerDashboard />;
       case 'technician':
         return <TechnicianDashboard />;
       default:

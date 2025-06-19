@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import React from 'react';
 import { useState } from 'react';
 import Link from 'next/link';
 import { useAuthContext } from '@/context/AuthContext';

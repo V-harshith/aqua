@@ -126,7 +126,10 @@ temp/
 
 # Task Magic - Development management system (not part of the main application)
 # Note: Task Magic is a separate development workflow tool, not an integrated feature
-task-magic/.ai/tasks/
-task-magic/.ai/memory/tasks/
-task-magic/.ai/memory/TASKS_LOG.md
-task-magic/.ai/memory/PLANS_LOG.md
+task-magic/
+.ai/
+userinput.py
+
+# Development and planning files
+*.md.backup
+*_backup.*

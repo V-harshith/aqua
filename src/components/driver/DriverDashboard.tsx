@@ -1,7 +1,9 @@
+"use client";
+
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
-import { Input } from '../ui/Input';
+import Button from '../ui/Button';
+import Input from '../ui/Input';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
@@ -28,7 +30,17 @@ interface DriverOperation {
 
 export const DriverDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
+  
+  // Helper function for toast notifications
+  const showToast = (message: string, type: 'success' | 'error') => {
+    if (type === 'success') {
+      showSuccess({ title: message });
+    } else {
+      showError({ title: message });
+    }
+  };
+  
   const [activeDistribution, setActiveDistribution] = useState<WaterDistribution | null>(null);
   const [distributionForm, setDistributionForm] = useState({
     route_details: '',
@@ -340,7 +352,15 @@ const ComplaintRegistrationCard: React.FC = () => {
   const [complaint, setComplaint] = useState({ type: 'plant', description: '' });
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
+  
+  const showToast = (message: string, type: 'success' | 'error') => {
+    if (type === 'success') {
+      showSuccess({ title: message });
+    } else {
+      showError({ title: message });
+    }
+  };
 
   const submitComplaint = async () => {
     if (!complaint.description.trim()) {

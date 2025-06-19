@@ -1,5 +1,6 @@
-'use client';
+"use client";
 
+import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { UserRole } from '@/lib/supabase';

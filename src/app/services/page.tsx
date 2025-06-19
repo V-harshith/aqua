@@ -1,236 +1,251 @@
-'use client';
+"use client";
 
-import { useState } from 'react';
-import { useAuthContext } from '@/context/AuthContext';
-import { RoleGuard } from '@/components/auth/RoleGuard';
-import Button from '@/components/ui/Button';
-import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import React from 'react';
+import { RoleGuard } from '../../components/auth/RoleGuard';
+import { ServiceRequestForm } from '../../components/services/ServiceRequestForm';
+import { Card } from '../../components/ui/Card';
+import Button from '../../components/ui/Button';
+import { useAuth } from '../../hooks/useAuth';
+import { useRouter } from 'next/navigation';
 
-export default function ServicesPage() {
-  const { userProfile, canManageServices } = useAuthContext();
-  const [showForm, setShowForm] = useState(false);
-  const [refreshKey, setRefreshKey] = useState(0);
-
-  const handleFormSuccess = () => {
-    setShowForm(false);
-    setRefreshKey(prev => prev + 1);
-  };
-
-  const isStaff = canManageServices();
-  const isTechnician = userProfile?.role === 'technician';
+const ServicesPage: React.FC = () => {
+  const { user } = useAuth();
+  const router = useRouter();
 
   return (
-    <RoleGuard 
-      allowedRoles={['admin', 'dept_head', 'service_manager', 'technician']}
-      fallback={
-        <div className="flex min-h-screen items-center justify-center">
-          <div className="text-center">
-            <h2 className="text-xl font-semibold text-red-600 mb-2">
-              Access Denied
-            </h2>
-            <p className="text-gray-600">
-              You don't have permission to access the services system.
-            </p>
-          </div>
+    <div className="min-h-screen bg-gray-50">
+      <div className="max-w-7xl mx-auto p-6">
+        {/* Page Header */}
+        <div className="mb-8">
+          <h1 className="text-3xl font-bold text-gray-900">Service Management</h1>
+          <p className="text-gray-600 mt-2">
+            {user?.role === 'customer' 
+              ? 'Request water system services and track your service history'
+              : 'Manage service requests, assignments, and technician schedules'
+            }
+          </p>
         </div>
-      }
-    >
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
-        <div className="max-w-7xl mx-auto">
-          {/* Header */}
-          <div className="mb-8">
-            <div className="flex items-center justify-between">
-              <div>
-                <h1 className="text-3xl font-bold text-gray-900">
-                  {isTechnician ? 'My Service Tasks' : 'Service Management'}
-                </h1>
-                <p className="text-gray-600 mt-1">
-                  {isTechnician 
-                    ? 'View and update your assigned service tasks'
-                    : 'Manage service requests and work orders'
-                  }
-                </p>
+
+        {/* Customer Service Request */}
+        <RoleGuard allowedRoles={['customer']}>
+          <div className="space-y-6">
+            {/* Quick Service Options */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
+              <Card>
+                <div className="p-4 text-center">
+                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">🔧</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Emergency Repair</h3>
+                  <p className="text-sm text-gray-600 mt-1">Immediate assistance for urgent issues</p>
+                  <div className="mt-3">
+                    <span className="text-sm font-medium text-red-600">Response: 15 mins</span>
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <div className="p-4 text-center">
+                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">🔍</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900">System Inspection</h3>
+                  <p className="text-sm text-gray-600 mt-1">Comprehensive system check and testing</p>
+                  <div className="mt-3">
+                    <span className="text-sm font-medium text-green-600">₹200 - 75 mins</span>
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <div className="p-4 text-center">
+                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">⚙️</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Regular Maintenance</h3>
+                  <p className="text-sm text-gray-600 mt-1">Scheduled maintenance for your systems</p>
+                  <div className="mt-3">
+                    <span className="text-sm font-medium text-purple-600">₹300 - 90 mins</span>
+                  </div>
+                </div>
+              </Card>
+
+              <Card>
+                <div className="p-4 text-center">
+                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-3">
+                    <span className="text-2xl">🧽</span>
+                  </div>
+                  <h3 className="font-semibold text-gray-900">Tank Cleaning</h3>
+                  <p className="text-sm text-gray-600 mt-1">Complete tank sanitization service</p>
+                  <div className="mt-3">
+                    <span className="text-sm font-medium text-orange-600">₹800 - 4 hours</span>
+                  </div>
+                </div>
+              </Card>
+            </div>
+
+            {/* Service Request Form */}
+            <ServiceRequestForm />
+
+            {/* Emergency Contact */}
+            <Card>
+              <div className="p-6">
+                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+                  <div className="flex items-center">
+                    <div className="w-8 h-8 bg-red-500 rounded-full mr-3 flex items-center justify-center">
+                      <span className="text-white text-lg font-bold">!</span>
+                    </div>
+                    <div>
+                      <h4 className="font-semibold text-red-900">Emergency Service Hotline</h4>
+                      <p className="text-red-800">For immediate assistance, call us 24/7</p>
+                      <div className="mt-2">
+                        <Button
+                          className="bg-red-600 hover:bg-red-700"
+                          onClick={() => window.open('tel:1800-AQUA-911', '_self')}
+                        >
+                          📞 Call 1800-AQUA-911
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
               </div>
-              
-              {/* Action Buttons */}
-              <div className="flex gap-3">
-                {isStaff && (
+            </Card>
+          </div>
+        </RoleGuard>
+
+        {/* Service Manager Dashboard */}
+        <RoleGuard allowedRoles={['admin', 'service_manager', 'dispatcher']}>
+          <div className="space-y-6">
+            {/* Quick Actions */}
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+              <Card>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Service Requests</h3>
+                  <p className="text-sm text-gray-600 mb-4">View and manage all service requests</p>
                   <Button
-                    onClick={() => setShowForm(!showForm)}
-                    variant={showForm ? "secondary" : "primary"}
+                    size="sm"
+                    onClick={() => router.push('/dashboard?tab=service-requests')}
                   >
-                    {showForm ? 'Cancel' : 'New Service Request'}
+                    Manage Requests
                   </Button>
-                )}
+                </div>
+              </Card>
+
+              <Card>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Technician Assignments</h3>
+                  <p className="text-sm text-gray-600 mb-4">Assign and track technician tasks</p>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push('/dashboard?tab=assignments')}
+                  >
+                    View Assignments
+                  </Button>
+                </div>
+              </Card>
+
+              <Card>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Service Analytics</h3>
+                  <p className="text-sm text-gray-600 mb-4">Performance metrics and reports</p>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push('/dashboard?tab=analytics')}
+                  >
+                    View Analytics
+                  </Button>
+                </div>
+              </Card>
+
+              <Card>
+                <div className="p-4">
+                  <h3 className="font-semibold text-gray-900 mb-2">Emergency Protocols</h3>
+                  <p className="text-sm text-gray-600 mb-4">Manage emergency response procedures</p>
+                  <Button
+                    size="sm"
+                    onClick={() => router.push('/dashboard?tab=emergency')}
+                  >
+                    Emergency Setup
+                  </Button>
+                </div>
+              </Card>
+            </div>
+
+            {/* Service Type Management */}
+            <Card>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Types & Pricing</h3>
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium">RO System Installation</h4>
+                      <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Complete installation service</p>
+                    <div className="flex justify-between text-sm">
+                      <span>₹500 • 3 hours</span>
+                      <span className="text-blue-600">Intermediate</span>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium">Emergency Repair</h4>
+                      <span className="text-sm bg-red-100 text-red-800 px-2 py-1 rounded">Emergency</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Urgent repair service</p>
+                    <div className="flex justify-between text-sm">
+                      <span>₹600 • 1 hour</span>
+                      <span className="text-orange-600">Advanced</span>
+                    </div>
+                  </div>
+
+                  <div className="border rounded-lg p-4">
+                    <div className="flex justify-between items-start mb-2">
+                      <h4 className="font-medium">Tank Cleaning</h4>
+                      <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
+                    </div>
+                    <p className="text-sm text-gray-600 mb-2">Complete sanitization</p>
+                    <div className="flex justify-between text-sm">
+                      <span>₹800 • 4 hours</span>
+                      <span className="text-blue-600">Basic</span>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-4">
+                  <Button
+                    variant="secondary"
+                    onClick={() => router.push('/admin/service-types')}
+                  >
+                    Manage Service Types
+                  </Button>
+                </div>
               </div>
-            </div>
-          </div>
-
-          {/* Service Stats */}
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-blue-100 text-blue-600">
-                    📋
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Pending</p>
-                    <p className="text-2xl font-semibold text-gray-900">-</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-purple-100 text-purple-600">
-                    👤
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Assigned</p>
-                    <p className="text-2xl font-semibold text-gray-900">-</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-orange-100 text-orange-600">
-                    🔄
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">In Progress</p>
-                    <p className="text-2xl font-semibold text-gray-900">-</p>
-                  </div>
-                </div>
-              </CardContent>
-            </Card>
-            
-            <Card>
-              <CardContent className="p-6">
-                <div className="flex items-center">
-                  <div className="p-3 rounded-full bg-green-100 text-green-600">
-                    ✅
-                  </div>
-                  <div className="ml-4">
-                    <p className="text-sm font-medium text-gray-600">Completed</p>
-                    <p className="text-2xl font-semibold text-gray-900">-</p>
-                  </div>
-                </div>
-              </CardContent>
             </Card>
           </div>
+        </RoleGuard>
 
-          {/* Content */}
-          <div className="space-y-8">
-            {/* Service Form */}
-            {showForm && (
-              <Card>
-                <CardHeader>
-                  <h2 className="text-xl font-semibold text-gray-900">Create Service Request</h2>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-4 bg-blue-50 border border-blue-200 rounded-md">
-                    <p className="text-blue-800">
-                      Service form component will be implemented here. 
-                      This will allow creating new service requests with customer selection,
-                      service type, description, scheduling, and technician assignment.
-                    </p>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
-
-            {/* Services List */}
-            {!showForm && (
-              <Card>
-                <CardHeader>
-                  <div className="flex items-center justify-between">
-                    <h2 className="text-xl font-semibold text-gray-900">
-                      {isTechnician ? 'My Assigned Tasks' : 'All Service Requests'}
-                    </h2>
-                    <div className="flex gap-2">
-                      <button className="px-3 py-1 rounded-md text-sm font-medium bg-blue-600 text-white">
-                        All
-                      </button>
-                      <button className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        Pending
-                      </button>
-                      <button className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        Assigned
-                      </button>
-                      <button className="px-3 py-1 rounded-md text-sm font-medium bg-gray-200 text-gray-700 hover:bg-gray-300">
-                        In Progress
-                      </button>
-                    </div>
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="p-8 text-center">
-                    <div className="text-gray-400 text-4xl mb-4">🔧</div>
-                    <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      Service Management System
-                    </h3>
-                    <p className="text-gray-600 mb-4">
-                      This section will display and manage service requests. Features include:
-                    </p>
-                    <div className="text-left max-w-md mx-auto space-y-2 text-sm text-gray-600">
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600">✓</span>
-                        <span>Service request creation and assignment</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600">✓</span>
-                        <span>Technician task management</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600">✓</span>
-                        <span>Status tracking and updates</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600">✓</span>
-                        <span>Material usage tracking</span>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <span className="text-green-600">✓</span>
-                        <span>Time and cost management</span>
-                      </div>
-                    </div>
-                  </div>
-                </CardContent>
-              </Card>
-            )}
+        {/* Technician Dashboard */}
+        <RoleGuard allowedRoles={['technician']}>
+          <div className="space-y-6">
+            <Card>
+              <div className="p-6">
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Technician Portal</h3>
+                <p className="text-gray-600 mb-4">
+                  Access your assignments, update service status, and manage your schedule
+                </p>
+                <Button onClick={() => router.push('/dashboard?tab=technician')}>
+                  Open Technician Dashboard
+                </Button>
+              </div>
+            </Card>
           </div>
-
-          {/* Quick Actions for Technicians */}
-          {isTechnician && (
-            <div className="mt-8">
-              <Card>
-                <CardHeader>
-                  <h3 className="text-lg font-semibold text-gray-900">Quick Actions</h3>
-                </CardHeader>
-                <CardContent>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                    <Button variant="secondary" fullWidth>
-                      Clock In/Out
-                    </Button>
-                    <Button variant="secondary" fullWidth>
-                      Update Task Status
-                    </Button>
-                    <Button variant="secondary" fullWidth>
-                      Report Materials Used
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            </div>
-          )}
-        </div>
+        </RoleGuard>
       </div>
-    </RoleGuard>
+    </div>
   );
-} 
+};
+
+export default ServicesPage; 

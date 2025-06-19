@@ -56,7 +56,7 @@ const navigationItems: NavItem[] = [
     href: '/services',
     icon: '🔧',
     description: 'Service requests and schedules',
-    roles: ['admin', 'dept_head', 'service_manager', 'technician', 'customer']
+    roles: ['admin', 'dept_head', 'service_manager', 'dispatcher', 'technician', 'customer']
   },
   {
     label: 'Driver Management',

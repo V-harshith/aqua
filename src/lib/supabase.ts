@@ -15,6 +15,7 @@ export type UserRole =
   | 'service_manager'
   | 'accounts_manager'
   | 'product_manager' 
+  | 'dispatcher'
   | 'technician'
   | 'customer';
 

@@ -30,7 +30,7 @@ export default function ComplaintsPage() {
               Access Denied
             </h2>
             <p className="text-gray-600">
-              You don't have permission to access the complaints system.
+              You don&apos;t have permission to access the complaints system.
             </p>
           </div>
         </div>

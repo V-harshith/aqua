@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
@@ -33,7 +33,7 @@ interface PaymentSummary {
 
 export const AccountsManagerDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
   const [stats, setStats] = useState<FinancialStats>({
     totalRevenue: 0,
     monthlyRevenue: 0,
@@ -62,7 +62,7 @@ export const AccountsManagerDashboard: React.FC = () => {
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      showToast('Failed to load dashboard data', 'error');
+      showError({ title: 'Failed to load dashboard data' });
     } finally {
       setIsLoading(false);
     }
@@ -150,21 +150,21 @@ export const AccountsManagerDashboard: React.FC = () => {
   const generateInvoice = async (customerId: string, amount: number) => {
     try {
       // Mock invoice generation - replace with actual invoice creation logic
-      showToast('Invoice generated successfully', 'success');
+      showSuccess({ title: 'Invoice generated successfully' });
       loadDashboardData();
     } catch (error: any) {
       console.error('Error generating invoice:', error);
-      showToast(error.message || 'Failed to generate invoice', 'error');
+      showError({ title: error.message || 'Failed to generate invoice' });
     }
   };
 
   const sendPaymentReminder = async (invoiceId: string) => {
     try {
       // Mock payment reminder - replace with actual reminder system
-      showToast('Payment reminder sent successfully', 'success');
+      showSuccess({ title: 'Payment reminder sent successfully' });
     } catch (error: any) {
       console.error('Error sending reminder:', error);
-      showToast(error.message || 'Failed to send reminder', 'error');
+      showError({ title: error.message || 'Failed to send reminder' });
     }
   };
 

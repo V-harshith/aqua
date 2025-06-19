@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
-import { Button } from '../ui/Button';
+import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase, ComplaintStatus } from '../../lib/supabase';
@@ -35,7 +35,7 @@ interface TechnicianWorkload {
 
 export const ServiceManagerDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const { success: showSuccess, error: showError } = useToast();
   const [stats, setStats] = useState<ServiceStats>({
     totalComplaints: 0,
     openComplaints: 0,
@@ -64,7 +64,7 @@ export const ServiceManagerDashboard: React.FC = () => {
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
-      showToast('Failed to load dashboard data', 'error');
+      showError({ title: 'Failed to load dashboard data' });
     } finally {
       setIsLoading(false);
     }
@@ -201,11 +201,11 @@ export const ServiceManagerDashboard: React.FC = () => {
 
       if (error) throw error;
 
-      showToast('Complaint assigned successfully', 'success');
+      showSuccess({ title: 'Complaint assigned successfully' });
       loadDashboardData();
     } catch (error: any) {
       console.error('Error assigning complaint:', error);
-      showToast(error.message || 'Failed to assign complaint', 'error');
+      showError({ title: error.message || 'Failed to assign complaint' });
     }
   };
 

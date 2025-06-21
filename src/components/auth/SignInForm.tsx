@@ -46,8 +46,9 @@ export default function SignInForm() {
         console.log('🔑 Sign-in successful:', data.user.email);
         setMessage('✅ Sign-in successful! Redirecting...');
         
-        // Use window.location for hard redirect to ensure auth state is updated
-        window.location.href = '/dashboard';
+        // Use router.push for proper Next.js navigation
+        router.push('/dashboard');
+        router.refresh();
       }
     } catch (error: any) {
       console.error('🔑 Sign-in failed:', error);

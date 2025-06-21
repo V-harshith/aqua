@@ -27,8 +27,22 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/signin', '/signup', '/reset-password', '/', '/update-password'];
-  if (publicRoutes.includes(path) || path.startsWith('/update-password')) {
+  const publicRoutes = [
+    '/signin', 
+    '/signup', 
+    '/reset-password', 
+    '/', 
+    '/update-password',
+    '/auth/callback',  // Add auth callback route
+    '/auth/error'      // Add auth error route
+  ];
+  
+  // Check if current path is public or starts with public route
+  const isPublicRoute = publicRoutes.some(route => 
+    path === route || path.startsWith('/update-password') || path.startsWith('/auth/callback') || path.startsWith('/auth/error')
+  );
+  
+  if (isPublicRoute) {
     return response;
   }
 

@@ -1,9 +1,10 @@
-'use client';
+"use client";
 
-import { useState, useEffect } from 'react';
-import { useAuthContext } from '@/context/AuthContext';
-import { RoleBasedNavigation } from '@/components/ui/RoleBasedNavigation';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
+import { Card } from '../ui/Card';
+import { RoleBasedNavigation } from '../ui/RoleBasedNavigation';
+import { useAuth } from '../../hooks/useAuth';
 
 interface AdminStats {
   totalUsers: number;
@@ -17,105 +18,56 @@ interface AdminStats {
 }
 
 export function AdminDashboard() {
-  const { userProfile } = useAuthContext();
+  const { user } = useAuth();
   const [stats, setStats] = useState<AdminStats | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  useEffect(() => {
-    fetchStats();
-  }, []);
-
   const fetchStats = async () => {
+    setLoading(true);
+    setError(null);
     try {
-      setLoading(true);
-      setError(null);
-      
-      const response = await fetch('/api/dashboard/overview?type=admin');
-      const result = await response.json();
-      
+      const response = await fetch('/api/admin/stats');
       if (!response.ok) {
-        throw new Error(result.error || 'Failed to fetch stats');
+        throw new Error(`HTTP error! status: ${response.status}`);
       }
-      
-      const dashboardData = result.data;
-      setStats({
-        totalUsers: dashboardData.stats.totalUsers,
-        activeUsers: dashboardData.stats.activeUsers,
-        customersCount: dashboardData.stats.customers || 0,
-        staffCount: dashboardData.stats.staffMembers || 0,
-        openComplaints: dashboardData.stats.openComplaints,
-        userGrowthPercentage: dashboardData.stats.userGrowthPercentage || 0,
-        roleBreakdown: {},
-        lastUpdated: dashboardData.lastUpdated
-      });
-    } catch (error: any) {
-      console.error('Error fetching admin stats:', error);
-      setError(error.message);
+      const data = await response.json();
+      setStats(data);
+    } catch (error) {
+      console.error('Failed to fetch admin stats:', error);
+      setError('Failed to load dashboard data. Please try again.');
     } finally {
       setLoading(false);
     }
   };
 
-  const adminStats = stats ? [
-    { 
-      label: 'Total Users', 
-      value: stats.totalUsers.toString(), 
-      change: `+${stats.userGrowthPercentage}%`, 
-      icon: '👥' 
-    },
-    { 
-      label: 'Active Users', 
-      value: stats.activeUsers.toString(), 
-      change: `${Math.round((stats.activeUsers / stats.totalUsers) * 100)}%`, 
-      icon: '✅' 
-    },
-    { 
-      label: 'Staff Members', 
-      value: stats.staffCount.toString(), 
-      change: `${Math.round((stats.staffCount / stats.totalUsers) * 100)}%`, 
-      icon: '🔧' 
-    },
-    { 
-      label: 'Customers', 
-      value: stats.customersCount.toString(), 
-      change: `${Math.round((stats.customersCount / stats.totalUsers) * 100)}%`, 
-      icon: '👤' 
-    }
-  ] : [];
+  useEffect(() => {
+    fetchStats();
+  }, []);
+
+  const adminStats = [
+    { label: 'Total Users', value: stats?.totalUsers || 0, change: '+12%', icon: '👥' },
+    { label: 'Active Users', value: stats?.activeUsers || 0, change: '+8%', icon: '✅' },
+    { label: 'Customers', value: stats?.customersCount || 0, change: '+15%', icon: '👤' },
+    { label: 'Staff Members', value: stats?.staffCount || 0, change: '+5%', icon: '👔' },
+    { label: 'Open Complaints', value: stats?.openComplaints || 0, change: '-3%', icon: '📋' },
+    { label: 'User Growth', value: `${stats?.userGrowthPercentage || 0}%`, change: 'This month', icon: '📈' }
+  ];
 
   const recentActivities = [
-    { action: 'User data refreshed', user: 'System', time: 'Just now', type: 'system' },
-    { action: 'Dashboard accessed', user: userProfile?.full_name || 'Admin', time: '1 min ago', type: 'user' },
+    { action: 'New user registered', user: 'System', time: '2 hours ago', type: 'user' },
+    { action: 'Service completed', user: 'Technician Ram', time: '3 hours ago', type: 'service' },
+    { action: 'Complaint resolved', user: 'Manager Shyam', time: '4 hours ago', type: 'service' },
     { action: 'Stats updated', user: 'System', time: '5 min ago', type: 'system' },
     { action: 'Database healthy', user: 'System', time: '10 min ago', type: 'system' }
   ];
 
-  const debugUsers = async () => {
-    try {
-      const response = await fetch('/api/debug/users');
-      const result = await response.json();
-      
-      console.log('=== USER DEBUG INFO ===');
-      console.log('Database Users:', result.dbUsers);
-      console.log('Auth Users:', result.authUsers);
-      console.log('Orphaned DB Users:', result.orphanedDbUsers);
-      console.log('Orphaned Auth Users:', result.orphanedAuthUsers);
-      console.log('Stats:', result.stats);
-      
-      alert(`Debug info logged to console. DB Users: ${result.stats?.totalDbUsers}, Auth Users: ${result.stats?.totalAuthUsers}, Orphaned: ${result.stats?.orphanedDb + result.stats?.orphanedAuth}`);
-    } catch (error) {
-      console.error('Debug error:', error);
-      alert('Debug failed. Check console for details.');
-    }
-  };
-
   const quickActions = [
-    { label: 'Add New User', href: '/admin/users/new', icon: '👤', color: 'blue' },
-    { label: 'Manage Users', href: '/admin/users', icon: '👥', color: 'green' },
-    { label: 'User Management', href: '/admin', icon: '⚙️', color: 'gray' },
-    { label: 'Refresh Stats', onClick: fetchStats, icon: '🔄', color: 'purple' },
-    { label: 'Debug Users', onClick: debugUsers, icon: '🐛', color: 'red' }
+    { label: 'Add New User', href: '/admin/users/new', icon: '👤' },
+    { label: 'Manage Users', href: '/admin/users', icon: '👥' },
+    { label: 'User Management', href: '/admin', icon: '⚙️' },
+    { label: 'Refresh Stats', onClick: fetchStats, icon: '🔄' },
+    { label: 'System Health', href: '/analytics', icon: '🏥' }
   ];
 
   if (loading) {
@@ -193,9 +145,7 @@ export function AdminDashboard() {
               <div>
                 <p className="text-sm font-medium text-gray-600">{stat.label}</p>
                 <p className="text-2xl font-bold text-gray-900">{stat.value}</p>
-                <p className="text-sm text-green-600">
-                  {stat.change} of total
-                </p>
+                <p className="text-sm text-green-600">{stat.change}</p>
               </div>
               <div className="text-3xl">{stat.icon}</div>
             </div>

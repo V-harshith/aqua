@@ -46,10 +46,8 @@ export default function SignInForm() {
         console.log('🔑 Sign-in successful:', data.user.email);
         setMessage('✅ Sign-in successful! Redirecting...');
         
-        // Simple redirect without middleware interference
-        setTimeout(() => {
-          router.push('/dashboard');
-        }, 1000);
+        // Use window.location for hard redirect to ensure auth state is updated
+        window.location.href = '/dashboard';
       }
     } catch (error: any) {
       console.error('🔑 Sign-in failed:', error);

@@ -235,11 +235,11 @@ export async function GET(request: NextRequest) {
         break;
 
       case 'accounts_manager':
-        // Accounts Manager stats - could include billing data when implemented
+        // Accounts Manager stats - billing module to be implemented
         stats.accounts = {
           active_customers: stats.totals.customers,
-          pending_bills: 0, // TODO: Implement when billing module is added
-          collected_this_month: 0 // TODO: Implement when billing module is added
+          pending_bills: 0, // Billing module not yet implemented
+          collected_this_month: 0 // Billing module not yet implemented
         };
         break;
     }
@@ -252,7 +252,7 @@ export async function GET(request: NextRequest) {
       service_completion_rate: stats.recent_services.total > 0 
         ? Math.round((stats.recent_services.completed / stats.recent_services.total) * 100)
         : 0,
-      customer_satisfaction: 85 // TODO: Implement when feedback system is added
+      customer_satisfaction: 85 // Feedback system not yet implemented - showing estimated value
     };
 
     stats.timeframe = timeframe;

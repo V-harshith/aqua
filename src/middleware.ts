@@ -27,8 +27,8 @@ export async function middleware(request: NextRequest) {
   const path = request.nextUrl.pathname;
 
   // Public routes that don't require authentication
-  const publicRoutes = ['/signin', '/signup', '/reset-password', '/'];
-  if (publicRoutes.includes(path)) {
+  const publicRoutes = ['/signin', '/signup', '/reset-password', '/', '/update-password'];
+  if (publicRoutes.includes(path) || path.startsWith('/update-password')) {
     return response;
   }
 
@@ -68,16 +68,24 @@ export async function middleware(request: NextRequest) {
     return response;
   }
 
-  // Protected page routes
-  const { data: { session } } = await supabase.auth.getSession();
+  // Protected page routes - get session ONCE
+  const { data: { session }, error } = await supabase.auth.getSession();
   
-  if (!session) {
+  // If no session, redirect to signin
+  if (!session || error) {
     const redirectUrl = new URL('/signin', request.url);
-    redirectUrl.searchParams.set('redirectTo', path);
+    if (path !== '/signin') {
+      redirectUrl.searchParams.set('redirectTo', path);
+    }
     return NextResponse.redirect(redirectUrl);
   }
 
-  // Role-based page access
+  // Allow dashboard access for all authenticated users
+  if (path === '/dashboard' || path.startsWith('/dashboard/')) {
+    return response;
+  }
+
+  // Role-based page access for specific routes
   const roleBasedRoutes = {
     '/admin': ['admin'],
     '/products': ['admin', 'product_manager'],

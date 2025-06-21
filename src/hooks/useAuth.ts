@@ -91,7 +91,7 @@ export function useAuth() {
         console.log('🔄 Refresh token invalid, redirecting to sign-in...');
         
         // Only redirect if not already on auth pages
-        const authPages = ['/signin', '/signup', '/reset-password'];
+        const authPages = ['/signin', '/signup', '/reset-password', '/update-password'];
         if (!authPages.some(page => pathname?.startsWith(page))) {
           router.push('/signin');
         }
@@ -144,7 +144,7 @@ export function useAuth() {
         // Handle token refresh errors
         if (event === 'TOKEN_REFRESHED' && !session) {
           console.log('🔄 Token refresh failed, redirecting to sign-in...');
-          const authPages = ['/signin', '/signup', '/reset-password'];
+          const authPages = ['/signin', '/signup', '/reset-password', '/update-password'];
           if (!authPages.some(page => pathname?.startsWith(page))) {
             router.push('/signin');
           }
@@ -209,7 +209,13 @@ export function useAuth() {
 
   const resetPassword = async (email: string) => {
     return supabase.auth.resetPasswordForEmail(email, {
-      redirectTo: `${window.location.origin}/reset-password`,
+      redirectTo: `${window.location.origin}/update-password`,
+    });
+  };
+
+  const updatePassword = async (newPassword: string) => {
+    return supabase.auth.updateUser({
+      password: newPassword
     });
   };
 
@@ -279,6 +285,8 @@ export function useAuth() {
     signIn,
     signOut,
     resetPassword,
+    updatePassword,
+    updateProfile,
     hasRole,
     hasAnyRole,
     isAdmin,
@@ -288,6 +296,5 @@ export function useAuth() {
     canManageServices,
     canManageVehicles,
     canViewDashboard,
-    updateProfile,
   };
 }

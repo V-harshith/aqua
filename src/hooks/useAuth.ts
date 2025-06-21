@@ -1,12 +1,15 @@
 import { useState, useEffect } from 'react';
 import { supabase, UserRole, User as WaterUser } from '@/lib/supabase';
 import { User, Session } from '@supabase/supabase-js';
+import { useRouter, usePathname } from 'next/navigation';
 
 export function useAuth() {
   const [user, setUser] = useState<User | null>(null);
   const [userProfile, setUserProfile] = useState<WaterUser | null>(null);
   const [session, setSession] = useState<Session | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
+  const pathname = usePathname();
 
   useEffect(() => {
     // Fetch user profile from our database
@@ -80,6 +83,23 @@ export function useAuth() {
       }
     };
 
+    // Handle refresh token errors and redirect to sign-in
+    const handleAuthError = (error: any) => {
+      if (error?.message?.includes('refresh_token_not_found') || 
+          error?.message?.includes('Invalid refresh token') ||
+          error?.message?.includes('AuthSessionMissingError')) {
+        console.log('🔄 Refresh token invalid, redirecting to sign-in...');
+        
+        // Only redirect if not already on auth pages
+        const authPages = ['/signin', '/signup', '/reset-password'];
+        if (!authPages.some(page => pathname?.startsWith(page))) {
+          router.push('/signin');
+        }
+        return true;
+      }
+      return false;
+    };
+
     // Get current session and user profile
     const getInitialSession = async () => {
       setLoading(true);
@@ -89,6 +109,10 @@ export function useAuth() {
         
         if (error) {
           console.error('🔍 Error getting session:', error);
+          if (handleAuthError(error)) {
+            setLoading(false);
+            return;
+          }
         }
         
         console.log('🔍 Session:', !!session, 'User:', !!session?.user);
@@ -104,6 +128,7 @@ export function useAuth() {
         }
       } catch (error) {
         console.error('🔍 Error in getInitialSession:', error);
+        handleAuthError(error);
       } finally {
         setLoading(false);
       }
@@ -115,6 +140,15 @@ export function useAuth() {
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
         console.log('🔍 Auth changed:', event, !!session);
+        
+        // Handle token refresh errors
+        if (event === 'TOKEN_REFRESHED' && !session) {
+          console.log('🔄 Token refresh failed, redirecting to sign-in...');
+          const authPages = ['/signin', '/signup', '/reset-password'];
+          if (!authPages.some(page => pathname?.startsWith(page))) {
+            router.push('/signin');
+          }
+        }
         
         setSession(session);
         setUser(session?.user ?? null);
@@ -133,7 +167,7 @@ export function useAuth() {
     return () => {
       subscription.unsubscribe();
     };
-  }, []);
+  }, [router, pathname]);
 
   const signUp = async (email: string, password: string, userData?: {
     full_name?: string;

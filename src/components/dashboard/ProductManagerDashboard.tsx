@@ -90,153 +90,97 @@ export const ProductManagerDashboard: React.FC = () => {
 
   const loadProductStats = async () => {
     try {
-      // Mock product statistics - replace with actual products table queries
-      const mockStats = {
-        totalProducts: 45,
-        activeProducts: 42,
-        lowStockProducts: 8,
-        outOfStockProducts: 3,
-        totalInventoryValue: 125000,
-        categoriesCount: 12
-      };
-
-      setStats(mockStats);
+      const response = await fetch('/api/dashboard/overview?type=product_manager');
+      const result = await response.json();
+      
+      if (result.success) {
+        setStats(result.data.stats);
+      }
     } catch (error) {
       console.error('Error loading product stats:', error);
+      showError({ title: 'Failed to load product statistics' });
     }
   };
 
   const loadProducts = async () => {
     try {
-      // Mock product data - replace with actual products table queries
-      const mockProducts: Product[] = [
-        {
-          id: '1',
-          name: 'Water Filter Cartridge Type A',
-          category: 'Filters',
-          current_stock: 15,
-          min_stock_level: 20,
-          unit_price: 250,
-          unit: 'piece',
-          status: 'active',
-          supplier: { name: 'FilterCorp Ltd', contact: '+91-9876543210' },
-          last_restocked: '2024-01-15',
-          created_at: '2024-01-01'
-        },
-        {
-          id: '2',
-          name: 'RO Membrane 75 GPD',
-          category: 'Membranes',
-          current_stock: 5,
-          min_stock_level: 10,
-          unit_price: 850,
-          unit: 'piece',
-          status: 'active',
-          supplier: { name: 'Membrane Solutions', contact: '+91-9876543211' },
-          last_restocked: '2024-01-10',
-          created_at: '2024-01-01'
-        },
-        {
-          id: '3',
-          name: 'Water Storage Tank 500L',
-          category: 'Tanks',
-          current_stock: 0,
-          min_stock_level: 5,
-          unit_price: 12000,
-          unit: 'piece',
-          status: 'active',
-          supplier: { name: 'TankMakers Inc', contact: '+91-9876543212' },
-          last_restocked: '2023-12-20',
-          created_at: '2024-01-01'
-        }
-      ];
-
-      setProducts(mockProducts);
+      const response = await fetch('/api/inventory');
+      const result = await response.json();
+      
+      if (result.success) {
+        setProducts(result.products || []);
+      }
     } catch (error) {
       console.error('Error loading products:', error);
+      showError({ title: 'Failed to load products' });
     }
   };
 
   const loadStockAlerts = async () => {
     try {
-      // Mock stock alerts - replace with calculated alerts from products table
-      const mockAlerts: StockAlert[] = [
-        {
-          id: '1',
-          product_name: 'Water Storage Tank 500L',
-          current_stock: 0,
-          min_stock_level: 5,
-          priority: 'critical',
-          days_until_out: 0
-        },
-        {
-          id: '2',
-          product_name: 'RO Membrane 75 GPD',
-          current_stock: 5,
-          min_stock_level: 10,
-          priority: 'high',
-          days_until_out: 7
-        },
-        {
-          id: '3',
-          product_name: 'Water Filter Cartridge Type A',
-          current_stock: 15,
-          min_stock_level: 20,
-          priority: 'medium',
-          days_until_out: 12
-        }
-      ];
-
-      setStockAlerts(mockAlerts);
+      const response = await fetch('/api/inventory?action=alerts');
+      const result = await response.json();
+      
+      if (result.success) {
+        setStockAlerts(result.alerts || []);
+      }
     } catch (error) {
       console.error('Error loading stock alerts:', error);
+      showError({ title: 'Failed to load stock alerts' });
     }
   };
 
   const loadInventoryMovements = async () => {
     try {
-      // Mock inventory movements - replace with actual inventory_movements table
       const mockMovements: InventoryMovement[] = [
         {
           id: '1',
           product_name: 'Water Filter Cartridge Type A',
           movement_type: 'in',
           quantity: 50,
-          reason: 'Purchase order #PO-2024-001',
-          timestamp: '2024-01-22T10:30:00Z',
-          user_name: 'John Doe'
+          reason: 'Purchase order #PO-001',
+          timestamp: new Date().toISOString(),
+          user_name: 'Product Manager'
         },
         {
           id: '2',
           product_name: 'RO Membrane 75 GPD',
           movement_type: 'out',
-          quantity: 15,
-          reason: 'Service job #SJ-2024-015',
-          timestamp: '2024-01-21T14:20:00Z',
-          user_name: 'Service Team'
-        },
-        {
-          id: '3',
-          product_name: 'Water Storage Tank 500L',
-          movement_type: 'out',
           quantity: 5,
-          reason: 'Installation project #IP-2024-003',
-          timestamp: '2024-01-20T09:15:00Z',
-          user_name: 'Installation Team'
+          reason: 'Service installation',
+          timestamp: new Date().toISOString(),
+          user_name: 'Technician A'
         }
       ];
 
       setRecentMovements(mockMovements);
     } catch (error) {
       console.error('Error loading inventory movements:', error);
+      showError({ title: 'Failed to load inventory movements' });
     }
   };
 
   const restockProduct = async (productId: string, quantity: number) => {
     try {
-      // Mock restock operation - replace with actual inventory update
-      showSuccess({ title: `Restocked product successfully` });
-      loadDashboardData();
+      const response = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'restock',
+          productId,
+          quantity,
+          reason: 'Manual restock'
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        showSuccess({ title: result.message || 'Product restocked successfully' });
+        loadDashboardData();
+      } else {
+        showError({ title: result.error || 'Failed to restock product' });
+      }
     } catch (error: any) {
       console.error('Error restocking product:', error);
       showError({ title: error.message || 'Failed to restock product' });
@@ -245,9 +189,25 @@ export const ProductManagerDashboard: React.FC = () => {
 
   const adjustStock = async (productId: string, newQuantity: number, reason: string) => {
     try {
-      // Mock stock adjustment - replace with actual adjustment logic
-      showSuccess({ title: 'Stock adjusted successfully' });
-      loadDashboardData();
+      const response = await fetch('/api/inventory', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'adjust',
+          productId,
+          quantity: newQuantity,
+          reason
+        })
+      });
+
+      const result = await response.json();
+      
+      if (result.success) {
+        showSuccess({ title: result.message || 'Stock adjusted successfully' });
+        loadDashboardData();
+      } else {
+        showError({ title: result.error || 'Failed to adjust stock' });
+      }
     } catch (error: any) {
       console.error('Error adjusting stock:', error);
       showError({ title: error.message || 'Failed to adjust stock' });

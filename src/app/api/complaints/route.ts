@@ -1,0 +1,232 @@
+import { NextRequest, NextResponse } from 'next/server';
+import { createClient } from '@supabase/supabase-js';
+
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
+  {
+    auth: {
+      autoRefreshToken: false,
+      persistSession: false
+    }
+  }
+);
+
+// Generate complaint number
+async function generateComplaintNumber(): Promise<string> {
+  const year = new Date().getFullYear();
+  const month = String(new Date().getMonth() + 1).padStart(2, '0');
+  
+  // Get the latest complaint number for this month
+  const { data } = await supabaseAdmin
+    .from('complaints')
+    .select('complaint_number')
+    .like('complaint_number', `CMP${year}${month}%`)
+    .order('complaint_number', { ascending: false })
+    .limit(1);
+
+  let sequence = 1;
+  if (data && data.length > 0) {
+    const lastNumber = data[0].complaint_number;
+    const lastSequence = parseInt(lastNumber.slice(-4));
+    sequence = lastSequence + 1;
+  }
+
+  return `CMP${year}${month}${String(sequence).padStart(4, '0')}`;
+}
+
+// GET - List all complaints with filtering and pagination
+export async function GET(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '10');
+    const search = searchParams.get('search') || '';
+    const status = searchParams.get('status') || '';
+    const priority = searchParams.get('priority') || '';
+    const category = searchParams.get('category') || '';
+    const assigned_to = searchParams.get('assigned_to') || '';
+    const offset = (page - 1) * limit;
+
+    let query = supabaseAdmin
+      .from('complaints')
+      .select(`
+        *,
+        customer:customers(customer_code, business_name, contact_person),
+        assigned_technician:users!complaints_assigned_to_fkey(full_name, email),
+        reporter:users!complaints_reported_by_fkey(full_name, email)
+      `, { count: 'exact' });
+
+    // Apply filters
+    if (search) {
+      query = query.or(`complaint_number.ilike.%${search}%,title.ilike.%${search}%,description.ilike.%${search}%`);
+    }
+
+    if (status) {
+      query = query.eq('status', status);
+    }
+
+    if (priority) {
+      query = query.eq('priority', priority);
+    }
+
+    if (category) {
+      query = query.eq('category', category);
+    }
+
+    if (assigned_to) {
+      query = query.eq('assigned_to', assigned_to);
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
+
+    const { data, error, count } = await query;
+
+    if (error) {
+      console.error('Error fetching complaints:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({
+      complaints: data,
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        pages: Math.ceil((count || 0) / limit)
+      }
+    });
+
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// POST - Create new complaint
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json();
+    const {
+      customer_id,
+      title,
+      description,
+      category,
+      priority = 'medium',
+      location,
+      reported_by
+    } = body;
+
+    // Validate required fields
+    if (!customer_id || !title || !description || !category) {
+      return NextResponse.json({ 
+        error: 'Customer ID, title, description, and category are required' 
+      }, { status: 400 });
+    }
+
+    // Generate complaint number
+    const complaint_number = await generateComplaintNumber();
+
+    const { data, error } = await supabaseAdmin
+      .from('complaints')
+      .insert([{
+        complaint_number,
+        customer_id,
+        title,
+        description,
+        category,
+        priority,
+        location,
+        reported_by,
+        status: 'open'
+      }])
+      .select(`
+        *,
+        customer:customers(customer_code, business_name, contact_person),
+        assigned_technician:users!complaints_assigned_to_fkey(full_name, email),
+        reporter:users!complaints_reported_by_fkey(full_name, email)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error creating complaint:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ complaint: data }, { status: 201 });
+
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// PATCH - Update complaint
+export async function PATCH(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const complaintId = searchParams.get('id');
+    const body = await request.json();
+
+    if (!complaintId) {
+      return NextResponse.json({ error: 'Complaint ID is required' }, { status: 400 });
+    }
+
+    // If status is being changed to resolved, add resolved_at timestamp
+    if (body.status === 'resolved' && !body.resolved_at) {
+      body.resolved_at = new Date().toISOString();
+    }
+
+    const { data, error } = await supabaseAdmin
+      .from('complaints')
+      .update(body)
+      .eq('id', complaintId)
+      .select(`
+        *,
+        customer:customers(customer_code, business_name, contact_person),
+        assigned_technician:users!complaints_assigned_to_fkey(full_name, email),
+        reporter:users!complaints_reported_by_fkey(full_name, email)
+      `)
+      .single();
+
+    if (error) {
+      console.error('Error updating complaint:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ complaint: data });
+
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+}
+
+// DELETE - Delete complaint
+export async function DELETE(request: NextRequest) {
+  try {
+    const { searchParams } = new URL(request.url);
+    const complaintId = searchParams.get('id');
+
+    if (!complaintId) {
+      return NextResponse.json({ error: 'Complaint ID is required' }, { status: 400 });
+    }
+
+    const { error } = await supabaseAdmin
+      .from('complaints')
+      .delete()
+      .eq('id', complaintId);
+
+    if (error) {
+      console.error('Error deleting complaint:', error);
+      return NextResponse.json({ error: error.message }, { status: 500 });
+    }
+
+    return NextResponse.json({ message: 'Complaint deleted successfully' });
+
+  } catch (error) {
+    console.error('Unexpected error:', error);
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  }
+} 

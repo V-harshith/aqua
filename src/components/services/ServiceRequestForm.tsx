@@ -139,7 +139,7 @@ export const ServiceRequestForm: React.FC = () => {
 
       // Pre-fill contact phone if available
       if (user?.phone) {
-        setFormData(prev => ({ ...prev, contact_phone: user.phone }));
+        setFormData(prev => ({ ...prev, contact_phone: user.phone || '' }));
       }
     } catch (error: any) {
       console.error('Error loading data:', error);
@@ -231,7 +231,7 @@ export const ServiceRequestForm: React.FC = () => {
         preferred_date: '',
         preferred_time_slot: 'anytime',
         customer_address: '',
-        contact_phone: user?.phone || '',
+        contact_phone: (user?.phone as string) || '',
         problem_description: '',
         customer_notes: '',
       });

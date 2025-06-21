@@ -129,9 +129,9 @@ export const WaterDistributionDashboard: React.FC = () => {
         actual_liters: d.status === 'completed' ? d.total_liters : undefined,
         start_time: d.start_time,
         end_time: d.end_time,
-        status: d.status === 'active' ? 'in_progress' : 'completed',
+        status: (d.status === 'active' ? 'in_progress' : 'completed') as 'planned' | 'in_progress' | 'completed' | 'cancelled',
         created_at: d.created_at,
-        driver: d.driver,
+        driver: Array.isArray(d.driver) ? d.driver[0] : d.driver,
         vehicle: {
           vehicle_number: 'KA-01-AB-1234',
           capacity: 5000

@@ -1,7 +1,7 @@
 import { NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Server-side Supabase client with service role
+// Server-side Supabase client with service role (can perform admin operations)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -16,54 +16,70 @@ const supabaseAdmin = createClient(
 // GET - Fetch admin dashboard statistics
 export async function GET() {
   try {
-    // Get user statistics
-    const { data: users, error: usersError } = await supabaseAdmin
+    // Get all users count
+    const { count: totalUsers, error: totalError } = await supabaseAdmin
       .from('users')
-      .select('role, is_active, created_at');
+      .select('*', { count: 'exact', head: true });
 
-    if (usersError) {
-      console.error('Error fetching users for stats:', usersError);
-      return NextResponse.json({ error: usersError.message }, { status: 500 });
+    if (totalError) {
+      console.error('Error fetching total users:', totalError);
     }
 
-    // Calculate statistics
-    const now = new Date();
-    const lastMonth = new Date(now.getFullYear(), now.getMonth() - 1, now.getDate());
+    // Get active users count
+    const { count: activeUsers, error: activeError } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('is_active', true);
 
-    // User stats
-    const totalUsers = users?.length || 0;
-    const activeUsers = users?.filter(user => user.is_active).length || 0;
-    const customersCount = users?.filter(user => user.role === 'customer').length || 0;
-    const staffCount = users?.filter(user => user.role !== 'customer').length || 0;
-    
-    // New users this month
-    const newUsersThisMonth = users?.filter(user => 
-      new Date(user.created_at) > lastMonth
-    ).length || 0;
+    if (activeError) {
+      console.error('Error fetching active users:', activeError);
+    }
 
-    // Calculate growth percentage (simplified)
-    const userGrowthPercentage = totalUsers > 0 ? Math.round((newUsersThisMonth / totalUsers) * 100) : 0;
+    // Get staff members count (all roles except customer)
+    const { count: staffMembers, error: staffError } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .neq('role', 'customer');
 
-    // Role breakdown
-    const roleBreakdown = users?.reduce((acc, user) => {
-      acc[user.role] = (acc[user.role] || 0) + 1;
-      return acc;
-    }, {} as Record<string, number>) || {};
+    if (staffError) {
+      console.error('Error fetching staff members:', staffError);
+    }
 
-    const stats = {
-      totalUsers,
-      activeUsers,
-      customersCount,
-      staffCount,
-      openComplaints: 0, // Will be implemented when complaints system is added
-      userGrowthPercentage,
-      roleBreakdown,
-      lastUpdated: now.toISOString()
-    };
+    // Get customers count
+    const { count: customers, error: customersError } = await supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact', head: true })
+      .eq('role', 'customer');
 
-    return NextResponse.json({ stats });
+    if (customersError) {
+      console.error('Error fetching customers:', customersError);
+    }
+
+    // Get recent complaints count
+    const { count: complaints, error: complaintsError } = await supabaseAdmin
+      .from('complaints')
+      .select('*', { count: 'exact', head: true });
+
+    if (complaintsError) {
+      console.error('Error fetching complaints:', complaintsError);
+    }
+
+    return NextResponse.json({
+      totalUsers: totalUsers || 0,
+      activeUsers: activeUsers || 0,
+      staffMembers: staffMembers || 0,
+      customers: customers || 0,
+      complaints: complaints || 0
+    });
+
   } catch (error) {
-    console.error('Unexpected error fetching admin stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+    console.error('Error fetching stats:', error);
+    return NextResponse.json({
+      totalUsers: 0,
+      activeUsers: 0,
+      staffMembers: 0,
+      customers: 0,
+      complaints: 0
+    });
   }
 } 

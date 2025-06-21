@@ -28,17 +28,34 @@ interface DriverOperation {
   timestamp: string;
 }
 
+// Toast helper functions
+let globalToast: any = null;
+
+const useGlobalToast = () => {
+  const toast = useToast();
+  globalToast = toast;
+  return {
+    showSuccess: (message: string) => toast.success({ title: message }),
+    showError: (message: string) => toast.error({ title: message })
+  };
+};
+
+const showToast = (message: string) => {
+  if (globalToast) globalToast.success({ title: message });
+};
+
+const showError = (message: string) => {
+  if (globalToast) globalToast.error({ title: message });
+};
+
 export const DriverDashboard: React.FC = () => {
   const { user } = useAuth();
-  const { success: showSuccess, error: showError } = useToast();
-  
-  // Helper function for toast notifications
-  const showToast = (message: string, type: 'success' | 'error') => {
-    if (type === 'success') {
-      showSuccess({ title: message });
-    } else {
-      showError({ title: message });
-    }
+  const toast = useToast();
+  const showToast = (message: string) => {
+    toast.success({ title: message });
+  };
+  const showError = (message: string) => {
+    toast.error({ title: message });
   };
   
   const [activeDistribution, setActiveDistribution] = useState<WaterDistribution | null>(null);
@@ -117,7 +134,7 @@ export const DriverDashboard: React.FC = () => {
   // Start water distribution
   const startDistribution = async () => {
     if (!distributionForm.route_details || distributionForm.estimated_liters <= 0) {
-      showToast('Please provide route details and estimated liters', 'error');
+      showError('Please provide route details and estimated liters');
       return;
     }
 
@@ -150,11 +167,11 @@ export const DriverDashboard: React.FC = () => {
 
       setActiveDistribution(data);
       setDistributionForm({ route_details: '', estimated_liters: 0 });
-      showToast('Water distribution started successfully', 'success');
+      showToast('Water distribution started successfully');
       loadDailyStats();
     } catch (error: any) {
       console.error('Error starting distribution:', error);
-      showToast(error.message || 'Failed to start distribution', 'error');
+      showError(error.message || 'Failed to start distribution');
     } finally {
       setIsLoading(false);
     }
@@ -163,7 +180,7 @@ export const DriverDashboard: React.FC = () => {
   // End water distribution
   const endDistribution = async (actualLiters: number) => {
     if (!activeDistribution || actualLiters <= 0) {
-      showToast('Please provide actual liters distributed', 'error');
+      showError('Please provide actual liters distributed');
       return;
     }
 
@@ -188,11 +205,11 @@ export const DriverDashboard: React.FC = () => {
       });
 
       setActiveDistribution(null);
-      showToast('Water distribution completed successfully', 'success');
+      showToast('Water distribution completed successfully');
       loadDailyStats();
     } catch (error: any) {
       console.error('Error ending distribution:', error);
-      showToast(error.message || 'Failed to end distribution', 'error');
+      showError(error.message || 'Failed to end distribution');
     } finally {
       setIsLoading(false);
     }
@@ -352,19 +369,11 @@ const ComplaintRegistrationCard: React.FC = () => {
   const [complaint, setComplaint] = useState({ type: 'plant', description: '' });
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const { success: showSuccess, error: showError } = useToast();
-  
-  const showToast = (message: string, type: 'success' | 'error') => {
-    if (type === 'success') {
-      showSuccess({ title: message });
-    } else {
-      showError({ title: message });
-    }
-  };
+  const toast = useToast();
 
   const submitComplaint = async () => {
     if (!complaint.description.trim()) {
-      showToast('Please describe the complaint', 'error');
+      toast.error({ title: 'Please describe the complaint' });
       return;
     }
 
@@ -389,10 +398,10 @@ const ComplaintRegistrationCard: React.FC = () => {
       if (error) throw error;
 
       setComplaint({ type: 'plant', description: '' });
-      showToast('Complaint registered successfully', 'success');
+      toast.success({ title: 'Complaint registered successfully' });
     } catch (error: any) {
       console.error('Error registering complaint:', error);
-      showToast(error.message || 'Failed to register complaint', 'error');
+      toast.error({ title: error.message || 'Failed to register complaint' });
     } finally {
       setIsLoading(false);
     }
@@ -449,11 +458,11 @@ const LeaveRequestCard: React.FC = () => {
   });
   const [isLoading, setIsLoading] = useState(false);
   const { user } = useAuth();
-  const { showToast } = useToast();
+  const toast = useToast();
 
   const submitLeaveRequest = async () => {
     if (!leave.start_date || !leave.end_date || !leave.reason.trim()) {
-      showToast('Please fill all leave request fields', 'error');
+      toast.error({ title: 'Please fill all leave request fields' });
       return;
     }
 
@@ -476,10 +485,10 @@ const LeaveRequestCard: React.FC = () => {
       if (error) throw error;
 
       setLeave({ start_date: '', end_date: '', reason: '', type: 'sick' });
-      showToast('Leave request submitted successfully', 'success');
+      toast.success({ title: 'Leave request submitted successfully' });
     } catch (error: any) {
       console.error('Error submitting leave request:', error);
-      showToast(error.message || 'Failed to submit leave request', 'error');
+      toast.error({ title: error.message || 'Failed to submit leave request' });
     } finally {
       setIsLoading(false);
     }

@@ -320,7 +320,7 @@ export const SimpleDashboard: React.FC = () => {
       <div className="bg-blue-600 text-white p-4">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-xl font-bold">Hi, {user?.full_name?.split(' ')[0] || 'Customer'}!</h1>
+            <h1 className="text-xl font-bold">Hi, {(user as any)?.full_name?.split(' ')[0] || 'Customer'}!</h1>
             <p className="text-blue-100 text-sm">Welcome to Aqua Water Management</p>
           </div>
           <div className="text-right">
@@ -387,27 +387,29 @@ export const SimpleDashboard: React.FC = () => {
           <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
           <div className="grid grid-cols-2 gap-3">
             {quickActions.map(action => (
-              <Card
+              <div
                 key={action.id}
                 className={`cursor-pointer transition-all hover:shadow-md ${
                   action.urgent ? 'ring-2 ring-red-200 bg-red-50' : ''
                 }`}
                 onClick={action.action}
               >
-                <div className="p-4 text-center">
-                  <div className="text-3xl mb-2">{action.icon}</div>
-                  <div className={`font-semibold text-sm ${
-                    action.urgent ? 'text-red-700' : 'text-gray-900'
-                  }`}>
-                    {action.title}
+                <Card>
+                  <div className="p-4 text-center">
+                    <div className="text-3xl mb-2">{action.icon}</div>
+                    <div className={`font-semibold text-sm ${
+                      action.urgent ? 'text-red-700' : 'text-gray-900'
+                    }`}>
+                      {action.title}
+                    </div>
+                    <div className={`text-xs mt-1 ${
+                      action.urgent ? 'text-red-600' : 'text-gray-500'
+                    }`}>
+                      {action.description}
+                    </div>
                   </div>
-                  <div className={`text-xs mt-1 ${
-                    action.urgent ? 'text-red-600' : 'text-gray-500'
-                  }`}>
-                    {action.description}
-                  </div>
-                </div>
-              </Card>
+                </Card>
+              </div>
             ))}
           </div>
         </div>

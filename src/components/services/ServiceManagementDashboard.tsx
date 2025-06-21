@@ -236,7 +236,7 @@ export const ServiceManagementDashboard: React.FC = () => {
         scheduled_date: scheduledDate,
         scheduled_time_start: scheduledTime,
         scheduled_time_end: endTime.toTimeString().slice(0, 5),
-        assignment_notes: `Assigned via dashboard by ${user?.full_name}`,
+        assignment_notes: `Assigned via dashboard by ${user?.email || 'Admin'}`,
         status: 'assigned',
         acceptance_status: 'pending',
       };

@@ -31,14 +31,24 @@ export function AdminDashboard() {
       setLoading(true);
       setError(null);
       
-      const response = await fetch('/api/admin/stats');
+      const response = await fetch('/api/dashboard/overview?type=admin');
       const result = await response.json();
       
       if (!response.ok) {
         throw new Error(result.error || 'Failed to fetch stats');
       }
       
-      setStats(result.stats);
+      const dashboardData = result.data;
+      setStats({
+        totalUsers: dashboardData.stats.totalUsers,
+        activeUsers: dashboardData.stats.activeUsers,
+        customersCount: dashboardData.stats.customers || 0,
+        staffCount: dashboardData.stats.staffMembers || 0,
+        openComplaints: dashboardData.stats.openComplaints,
+        userGrowthPercentage: dashboardData.stats.userGrowthPercentage || 0,
+        roleBreakdown: {},
+        lastUpdated: dashboardData.lastUpdated
+      });
     } catch (error: any) {
       console.error('Error fetching admin stats:', error);
       setError(error.message);

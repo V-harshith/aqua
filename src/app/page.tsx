@@ -14,13 +14,13 @@ export default function Home() {
   const [showSignUp, setShowSignUp] = useState(false);
 
   useEffect(() => {
-    // Redirect authenticated users to dashboard
+    // Only redirect if user is authenticated
     if (!loading && user) {
+      console.log('🏠 User authenticated, redirecting to dashboard');
       router.push('/dashboard');
     }
   }, [user, loading, router]);
 
-  // Show loading state
   if (loading) {
     return (
       <div className="flex min-h-screen items-center justify-center">
@@ -29,6 +29,7 @@ export default function Home() {
     );
   }
 
+  // Show landing page with auth forms if user is not authenticated
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
       <div className="min-h-screen flex items-center justify-center p-4">

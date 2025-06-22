@@ -1,251 +1,321 @@
-"use client";
+'use client';
 
-import React from 'react';
-import { RoleGuard } from '../../components/auth/RoleGuard';
-import { ServiceRequestForm } from '../../components/services/ServiceRequestForm';
-import { Card } from '../../components/ui/Card';
-import Button from '../../components/ui/Button';
-import { useAuth } from '../../hooks/useAuth';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useAuth } from '@/hooks/useAuth';
+import { Card } from '@/components/ui/Card';
+import Button from '@/components/ui/Button';
+import { useToast } from '@/hooks/useToast';
+import Link from 'next/link';
 
-const ServicesPage: React.FC = () => {
+interface Service {
+  id: string;
+  service_type: string;
+  status: string;
+  priority: string;
+  description: string;
+  scheduled_date: string;
+  customer_id: string;
+  technician_id: string;
+  created_at: string;
+  updated_at: string;
+  customer?: {
+    business_name: string;
+    contact_person: string;
+  };
+  technician?: {
+    full_name: string;
+    email: string;
+    phone: string;
+  };
+}
+
+export default function ServicesPage() {
   const { user } = useAuth();
-  const router = useRouter();
+  const { success, error } = useToast();
+  const [services, setServices] = useState<Service[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [filter, setFilter] = useState('all');
+
+  useEffect(() => {
+    loadServices();
+  }, []);
+
+  const loadServices = async () => {
+    try {
+      setLoading(true);
+      const response = await fetch('/api/services');
+      if (!response.ok) {
+        throw new Error('Failed to load services');
+      }
+      const data = await response.json();
+      setServices(data || []);
+    } catch (err: any) {
+      error({ title: 'Error', message: err.message });
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const getStatusColor = (status: string) => {
+    switch (status) {
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const filteredServices = services.filter(service => {
+    if (filter === 'all') return true;
+    return service.status === filter;
+  });
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
+  };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading services...</p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <div className="max-w-7xl mx-auto p-6">
-        {/* Page Header */}
-        <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Service Management</h1>
-          <p className="text-gray-600 mt-2">
-            {user?.role === 'customer' 
-              ? 'Request water system services and track your service history'
-              : 'Manage service requests, assignments, and technician schedules'
-            }
-          </p>
-        </div>
+      <div className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8 space-y-6">
+        {/* Navigation Breadcrumbs */}
+        <Card>
+          <div className="p-4">
+            <nav className="flex items-center space-x-2 text-sm text-gray-600">
+              <Link href="/dashboard" className="hover:text-blue-600 flex items-center transition-colors">
+                <span className="mr-1">🏠</span>
+                Main Dashboard
+              </Link>
+              <span>›</span>
+              <span className="text-gray-900 font-medium">Services</span>
+            </nav>
+          </div>
+        </Card>
 
-        {/* Customer Service Request */}
-        <RoleGuard allowedRoles={['customer']}>
-          <div className="space-y-6">
-            {/* Quick Service Options */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 mb-8">
-              <Card>
-                <div className="p-4 text-center">
-                  <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl">🔧</span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Emergency Repair</h3>
-                  <p className="text-sm text-gray-600 mt-1">Immediate assistance for urgent issues</p>
-                  <div className="mt-3">
-                    <span className="text-sm font-medium text-red-600">Response: 15 mins</span>
-                  </div>
-                </div>
-              </Card>
+        {/* Header */}
+        <Card>
+          <div className="flex items-center justify-between p-6">
+            <div>
+              <h1 className="text-3xl font-bold text-gray-900">Service Management</h1>
+              <p className="text-gray-600">Manage all service requests and assignments</p>
+            </div>
+            <div className="flex items-center space-x-3">
+              <Button
+                onClick={() => window.location.href = '/dashboard'}
+                variant="outline"
+                className="border-blue-200 text-blue-600 hover:bg-blue-50"
+              >
+                ⬅️ Back to Dashboard
+              </Button>
+              <Link href="/services/new">
+                <Button className="bg-blue-600 hover:bg-blue-700">
+                  ➕ New Service Request
+                </Button>
+              </Link>
+              <Button
+                onClick={loadServices}
+                variant="secondary"
+                disabled={loading}
+              >
+                {loading ? '🔄 Loading...' : '🔄 Refresh'}
+              </Button>
+            </div>
+          </div>
+        </Card>
 
-              <Card>
-                <div className="p-4 text-center">
-                  <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl">🔍</span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900">System Inspection</h3>
-                  <p className="text-sm text-gray-600 mt-1">Comprehensive system check and testing</p>
-                  <div className="mt-3">
-                    <span className="text-sm font-medium text-green-600">₹200 - 75 mins</span>
-                  </div>
-                </div>
-              </Card>
+        {/* Filters */}
+        <Card>
+          <div className="p-4">
+            <div className="flex items-center space-x-4">
+              <span className="text-sm font-medium text-gray-700">Filter by status:</span>
+              {['all', 'pending', 'in_progress', 'completed', 'cancelled'].map(status => (
+                <button
+                  key={status}
+                  onClick={() => setFilter(status)}
+                  className={`px-3 py-1 rounded-full text-sm transition-colors ${
+                    filter === status
+                      ? 'bg-blue-100 text-blue-800'
+                      : 'bg-gray-100 text-gray-600 hover:bg-gray-200'
+                  }`}
+                >
+                  {status === 'all' ? 'All' : status.replace('_', ' ').toUpperCase()}
+                </button>
+              ))}
+            </div>
+          </div>
+        </Card>
 
-              <Card>
-                <div className="p-4 text-center">
-                  <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl">⚙️</span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Regular Maintenance</h3>
-                  <p className="text-sm text-gray-600 mt-1">Scheduled maintenance for your systems</p>
-                  <div className="mt-3">
-                    <span className="text-sm font-medium text-purple-600">₹300 - 90 mins</span>
-                  </div>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="p-4 text-center">
-                  <div className="w-12 h-12 bg-orange-100 rounded-lg flex items-center justify-center mx-auto mb-3">
-                    <span className="text-2xl">🧽</span>
-                  </div>
-                  <h3 className="font-semibold text-gray-900">Tank Cleaning</h3>
-                  <p className="text-sm text-gray-600 mt-1">Complete tank sanitization service</p>
-                  <div className="mt-3">
-                    <span className="text-sm font-medium text-orange-600">₹800 - 4 hours</span>
-                  </div>
-                </div>
-              </Card>
+        {/* Services List */}
+        <Card>
+          <div className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Service Requests ({filteredServices.length})</h2>
+              <div className="text-sm text-gray-600">
+                Showing {filteredServices.length} of {services.length} services
+              </div>
             </div>
 
-            {/* Service Request Form */}
-            <ServiceRequestForm />
-
-            {/* Emergency Contact */}
-            <Card>
-              <div className="p-6">
-                <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-                  <div className="flex items-center">
-                    <div className="w-8 h-8 bg-red-500 rounded-full mr-3 flex items-center justify-center">
-                      <span className="text-white text-lg font-bold">!</span>
-                    </div>
-                    <div>
-                      <h4 className="font-semibold text-red-900">Emergency Service Hotline</h4>
-                      <p className="text-red-800">For immediate assistance, call us 24/7</p>
-                      <div className="mt-2">
+            {filteredServices.length === 0 ? (
+              <div className="text-center py-12">
+                <div className="text-6xl mb-4">🔧</div>
+                <h3 className="text-lg font-medium text-gray-900 mb-2">No services found</h3>
+                <p className="text-gray-600 mb-4">
+                  {filter === 'all' 
+                    ? 'No service requests have been created yet.' 
+                    : `No services with status "${filter}" found.`}
+                </p>
+                <Link href="/services/new">
+                  <Button className="bg-blue-600 hover:bg-blue-700">
+                    Create First Service Request
+                  </Button>
+                </Link>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {filteredServices.map(service => (
+                  <div key={service.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                    <div className="flex items-start justify-between">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3 mb-2">
+                          <h3 className="font-semibold text-lg">{service.service_type}</h3>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
+                            {service.status.replace('_', ' ').toUpperCase()}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
+                            {service.priority.toUpperCase()} PRIORITY
+                          </span>
+                        </div>
+                        
+                        <p className="text-gray-600 mb-3">{service.description}</p>
+                        
+                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 text-sm">
+                          <div>
+                            <span className="font-medium text-gray-700">Customer:</span>
+                            <p className="text-gray-600">
+                              {service.customer?.business_name || 'Unknown'}
+                              {service.customer?.contact_person && (
+                                <span className="block">{service.customer.contact_person}</span>
+                              )}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium text-gray-700">Technician:</span>
+                            <p className="text-gray-600">
+                              {service.technician?.full_name || 'Unassigned'}
+                              {service.technician?.phone && (
+                                <span className="block">{service.technician.phone}</span>
+                              )}
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium text-gray-700">Scheduled:</span>
+                            <p className="text-gray-600">
+                              {service.scheduled_date 
+                                ? formatDate(service.scheduled_date)
+                                : 'Not scheduled'
+                              }
+                            </p>
+                          </div>
+                          
+                          <div>
+                            <span className="font-medium text-gray-700">Created:</span>
+                            <p className="text-gray-600">{formatDate(service.created_at)}</p>
+                          </div>
+                        </div>
+                      </div>
+                      
+                      <div className="ml-4 flex flex-col space-y-2">
                         <Button
-                          className="bg-red-600 hover:bg-red-700"
-                          onClick={() => window.open('tel:1800-AQUA-911', '_self')}
+                          size="sm"
+                          variant="outline"
+                          onClick={() => window.location.href = `/services/${service.id}`}
                         >
-                          📞 Call 1800-AQUA-911
+                          View Details
                         </Button>
+                        {service.status === 'pending' && (
+                          <Button
+                            size="sm"
+                            onClick={() => window.location.href = `/services/assignment?service_id=${service.id}`}
+                          >
+                            Assign Technician
+                          </Button>
+                        )}
                       </div>
                     </div>
                   </div>
-                </div>
+                ))}
               </div>
-            </Card>
+            )}
           </div>
-        </RoleGuard>
+        </Card>
 
-        {/* Service Manager Dashboard */}
-        <RoleGuard allowedRoles={['admin', 'service_manager', 'dispatcher']}>
-          <div className="space-y-6">
-            {/* Quick Actions */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-              <Card>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Service Requests</h3>
-                  <p className="text-sm text-gray-600 mb-4">View and manage all service requests</p>
-                  <Button
-                    size="sm"
-                    onClick={() => router.push('/dashboard?tab=service-requests')}
-                  >
-                    Manage Requests
-                  </Button>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Technician Assignments</h3>
-                  <p className="text-sm text-gray-600 mb-4">Assign and track technician tasks</p>
-                  <Button
-                    size="sm"
-                    onClick={() => router.push('/dashboard?tab=assignments')}
-                  >
-                    View Assignments
-                  </Button>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Service Analytics</h3>
-                  <p className="text-sm text-gray-600 mb-4">Performance metrics and reports</p>
-                  <Button
-                    size="sm"
-                    onClick={() => router.push('/dashboard?tab=analytics')}
-                  >
-                    View Analytics
-                  </Button>
-                </div>
-              </Card>
-
-              <Card>
-                <div className="p-4">
-                  <h3 className="font-semibold text-gray-900 mb-2">Emergency Protocols</h3>
-                  <p className="text-sm text-gray-600 mb-4">Manage emergency response procedures</p>
-                  <Button
-                    size="sm"
-                    onClick={() => router.push('/dashboard?tab=emergency')}
-                  >
-                    Emergency Setup
-                  </Button>
-                </div>
-              </Card>
+        {/* Quick Stats */}
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <Card>
+            <div className="p-4 text-center">
+              <div className="text-2xl font-bold text-blue-600">
+                {services.filter(s => s.status === 'pending').length}
+              </div>
+              <div className="text-sm text-gray-600">Pending</div>
             </div>
-
-            {/* Service Type Management */}
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Service Types & Pricing</h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium">RO System Installation</h4>
-                      <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">Complete installation service</p>
-                    <div className="flex justify-between text-sm">
-                      <span>₹500 • 3 hours</span>
-                      <span className="text-blue-600">Intermediate</span>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium">Emergency Repair</h4>
-                      <span className="text-sm bg-red-100 text-red-800 px-2 py-1 rounded">Emergency</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">Urgent repair service</p>
-                    <div className="flex justify-between text-sm">
-                      <span>₹600 • 1 hour</span>
-                      <span className="text-orange-600">Advanced</span>
-                    </div>
-                  </div>
-
-                  <div className="border rounded-lg p-4">
-                    <div className="flex justify-between items-start mb-2">
-                      <h4 className="font-medium">Tank Cleaning</h4>
-                      <span className="text-sm bg-green-100 text-green-800 px-2 py-1 rounded">Active</span>
-                    </div>
-                    <p className="text-sm text-gray-600 mb-2">Complete sanitization</p>
-                    <div className="flex justify-between text-sm">
-                      <span>₹800 • 4 hours</span>
-                      <span className="text-blue-600">Basic</span>
-                    </div>
-                  </div>
-                </div>
-
-                <div className="mt-4">
-                  <Button
-                    variant="secondary"
-                    onClick={() => router.push('/admin/service-types')}
-                  >
-                    Manage Service Types
-                  </Button>
-                </div>
+          </Card>
+          
+          <Card>
+            <div className="p-4 text-center">
+              <div className="text-2xl font-bold text-yellow-600">
+                {services.filter(s => s.status === 'in_progress').length}
               </div>
-            </Card>
-          </div>
-        </RoleGuard>
-
-        {/* Technician Dashboard */}
-        <RoleGuard allowedRoles={['technician']}>
-          <div className="space-y-6">
-            <Card>
-              <div className="p-6">
-                <h3 className="text-lg font-semibold text-gray-900 mb-4">Technician Portal</h3>
-                <p className="text-gray-600 mb-4">
-                  Access your assignments, update service status, and manage your schedule
-                </p>
-                <Button onClick={() => router.push('/dashboard?tab=technician')}>
-                  Open Technician Dashboard
-                </Button>
+              <div className="text-sm text-gray-600">In Progress</div>
+            </div>
+          </Card>
+          
+          <Card>
+            <div className="p-4 text-center">
+              <div className="text-2xl font-bold text-green-600">
+                {services.filter(s => s.status === 'completed').length}
               </div>
-            </Card>
-          </div>
-        </RoleGuard>
+              <div className="text-sm text-gray-600">Completed</div>
+            </div>
+          </Card>
+          
+          <Card>
+            <div className="p-4 text-center">
+              <div className="text-2xl font-bold text-gray-600">
+                {services.length}
+              </div>
+              <div className="text-sm text-gray-600">Total Services</div>
+            </div>
+          </Card>
+        </div>
       </div>
     </div>
   );
-};
-
-export default ServicesPage; 
+}

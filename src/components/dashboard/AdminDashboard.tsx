@@ -211,11 +211,11 @@ export function AdminDashboard() {
       </div>
 
       {/* System Overview */}
-      {stats && (
+      {stats && stats.roleBreakdown && (
         <div className="bg-white rounded-lg shadow p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Role Distribution</h3>
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            {Object.entries(stats.roleBreakdown).map(([role, count]) => (
+            {Object.entries(stats.roleBreakdown || {}).map(([role, count]) => (
               <div key={role} className="text-center p-3 border rounded-lg">
                 <div className="text-2xl mb-1">
                   {role === 'admin' ? '👑' : 

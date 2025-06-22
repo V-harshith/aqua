@@ -4,6 +4,7 @@ import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
 import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
+import { EnhancedAdminDashboard } from '@/components/dashboard/EnhancedAdminDashboard';
 import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard';
 import { ManagerDashboard } from '@/components/dashboard/ManagerDashboard';
 import { ServiceManagerDashboard } from '@/components/dashboard/ServiceManagerDashboard';
@@ -13,37 +14,41 @@ import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard'
 import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
 
 export default function DashboardPage() {
-  const { user, userProfile, loading, signOut } = useAuthContext();
+  const { user, userProfile, loading } = useAuthContext();
   const router = useRouter();
 
   useEffect(() => {
-    // Simple client-side auth check
     if (!loading && !user) {
-      console.log('🏠 No user found, redirecting to signin');
       router.push('/signin');
     }
   }, [user, loading, router]);
 
   const handleSignOut = async () => {
-    console.log('🚪 Signing out...');
-    await signOut();
-    router.push('/signin');
+    try {
+      const { createClient } = await import('@/lib/supabase');
+      const supabase = createClient();
+      await supabase.auth.signOut();
+      router.push('/signin');
+    } catch (error) {
+      console.error('Sign out error:', error);
+    }
   };
 
-  // Role-based dashboard rendering
   const renderRoleBasedDashboard = () => {
     if (!userProfile) {
       return (
         <div className="min-h-screen flex items-center justify-center bg-gray-50">
           <div className="text-center bg-white p-8 rounded-lg shadow">
-            <div className="text-amber-600 text-4xl mb-4">⚠️</div>
+            <div className="text-gray-600 text-4xl mb-4">⚠️</div>
             <h2 className="text-xl font-semibold text-gray-900 mb-2">Profile Not Found</h2>
-            <p className="text-gray-600">Unable to load your user profile. Please contact administrator.</p>
+            <p className="text-gray-600 mb-4">
+              Your user profile could not be loaded.
+            </p>
             <button
               onClick={handleSignOut}
-              className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+              className="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-md text-sm font-medium"
             >
-              Sign Out & Try Again
+              Sign Out
             </button>
           </div>
         </div>
@@ -53,7 +58,7 @@ export default function DashboardPage() {
     // Render dashboard based on user role
     switch (userProfile.role) {
       case 'admin':
-        return <AdminDashboard />;
+        return <EnhancedAdminDashboard />;
       case 'customer':
         return <CustomerDashboard />;
       case 'dept_head':
@@ -73,12 +78,12 @@ export default function DashboardPage() {
             <div className="text-center bg-white p-8 rounded-lg shadow">
               <div className="text-red-600 text-4xl mb-4">🚫</div>
               <h2 className="text-xl font-semibold text-gray-900 mb-2">Access Denied</h2>
-              <p className="text-gray-600">
-                You don&apos;t have access to this dashboard.
+              <p className="text-gray-600 mb-4">
+                You don&apos;t have access to this dashboard. Role: {userProfile.role}
               </p>
               <button
                 onClick={handleSignOut}
-                className="mt-4 bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
+                className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium"
               >
                 Sign Out
               </button>
@@ -92,8 +97,9 @@ export default function DashboardPage() {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="text-center">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-2 text-gray-600">Loading...</p>
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
+          <p className="mt-4 text-gray-600">Loading dashboard...</p>
+          <p className="text-sm text-gray-500">Please wait while we load your data</p>
         </div>
       </div>
     );
@@ -111,36 +117,13 @@ export default function DashboardPage() {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Header with Sign Out */}
-      <div className="bg-white shadow">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center py-4">
-            <div className="flex items-center">
-              <span className="text-2xl mr-2">💧</span>
-              <span className="text-xl font-bold text-blue-600">Project Aqua</span>
-              {userProfile && (
-                <span className="ml-4 text-sm text-gray-600">
-                  Welcome, {userProfile.full_name}
-                </span>
-              )}
-            </div>
-            <button
-              onClick={handleSignOut}
-              className="bg-red-600 hover:bg-red-700 text-white px-4 py-2 rounded-md text-sm font-medium transition-colors duration-200"
-            >
-              Sign Out
-            </button>
-          </div>
-        </div>
-      </div>
-
       {/* Navigation */}
       <DashboardNavigation />
-
-      {/* Role-based Dashboard Content */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      
+      {/* Main Content */}
+      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {renderRoleBasedDashboard()}
-      </div>
+      </main>
     </div>
   );
 }

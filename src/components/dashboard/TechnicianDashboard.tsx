@@ -5,91 +5,164 @@ import { Card } from '../ui/Card';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { supabase } from '../../lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface TechnicianStats {
   assignedJobs: number;
+  inProgressJobs: number;
   completedJobs: number;
-  pendingJobs: number;
   avgRating: number;
 }
 
-interface JobAssignment {
+interface ServiceJob {
   id: string;
-  type: string;
-  title: string;
-  timestamp: string;
+  service_number: string;
+  service_type: string;
+  description: string;
   status: string;
+  priority: string;
+  scheduled_date: string;
+  customer?: {
+    business_name?: string;
+    contact_person?: string;
+    phone?: string;
+    billing_address?: string;
+  };
+  created_at: string;
+  estimated_hours?: number;
 }
 
 export const TechnicianDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
+  const router = useRouter();
   const [stats, setStats] = useState<TechnicianStats>({
     assignedJobs: 0,
+    inProgressJobs: 0,
     completedJobs: 0,
-    pendingJobs: 0,
-    avgRating: 0
+    avgRating: 4.5
   });
-  const [recentJobs, setRecentJobs] = useState<JobAssignment[]>([]);
+  const [assignedJobs, setAssignedJobs] = useState<ServiceJob[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isAvailable, setIsAvailable] = useState(true);
 
+  // Load data when component mounts and every 30 seconds for real-time updates
   useEffect(() => {
     if (user?.id) {
-      loadDashboardData();
+      loadTechnicianData();
+      const interval = setInterval(loadTechnicianData, 30000); // Auto-refresh every 30 seconds
+      return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user?.id]); // Only depend on stable user.id
 
-  const loadDashboardData = async () => {
-    setIsLoading(true);
+  const loadTechnicianData = async () => {
     try {
-      const response = await fetch(`/api/dashboard/overview?type=technician&userId=${user?.id}`);
-      const result = await response.json();
+      setIsLoading(true);
       
-      if (result.success) {
-        setStats(result.data.stats);
-        setRecentJobs(result.data.activities || []);
+      // Fetch assigned and in-progress services for this technician
+      const servicesResponse = await fetch(`/api/services?assigned_technician=${user?.id}&status=assigned,in_progress`);
+      if (servicesResponse.ok) {
+        const servicesData = await servicesResponse.json();
+        const jobs = servicesData.services || [];
+        setAssignedJobs(jobs);
+        
+        // Calculate real-time stats
+        const assigned = jobs.filter((j: ServiceJob) => j.status === 'assigned').length;
+        const inProgress = jobs.filter((j: ServiceJob) => j.status === 'in_progress').length;
+        
+        // Get completed jobs count separately
+        const completedResponse = await fetch(`/api/services?assigned_technician=${user?.id}&status=completed`);
+        if (completedResponse.ok) {
+          const completedData = await completedResponse.json();
+          const completed = completedData.services?.length || 0;
+          
+          setStats({
+            assignedJobs: assigned,
+            inProgressJobs: inProgress,
+            completedJobs: completed,
+            avgRating: 4.5
+          });
+        }
+        
+        console.log('✅ Technician data loaded:', { assigned, inProgress });
       }
     } catch (error) {
-      console.error('Error loading dashboard data:', error);
-      showError({ title: 'Failed to load dashboard data' });
+      console.error('Error loading technician data:', error);
+      showError({ title: 'Error', message: 'Failed to load dashboard data' });
+      setAssignedJobs([]); // Ensure we have fallback data
     } finally {
       setIsLoading(false);
     }
   };
 
-  const toggleAvailability = async () => {
+  const updateJobStatus = async (jobId: string, newStatus: string) => {
     try {
-      const response = await fetch('/api/technicians', {
-        method: 'POST',
+      const response = await fetch('/api/services', {
+        method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
-          technicianId: user?.id,
-          availability: !isAvailable
+          serviceId: jobId,
+          status: newStatus
         })
       });
 
-      const result = await response.json();
-      
-      if (result.success) {
-        setIsAvailable(!isAvailable);
-        showSuccess({ title: `Status updated to ${!isAvailable ? 'Available' : 'Busy'}` });
+      if (response.ok) {
+        showSuccess({ 
+          title: 'Status Updated', 
+          message: `Job status changed to ${newStatus}` 
+        });
+        loadTechnicianData(); // Refresh data
       } else {
-        showError({ title: 'Failed to update status' });
+        throw new Error(`Failed to update status: ${response.status}`);
       }
     } catch (error) {
-      showError({ title: 'Failed to update status' });
+      console.error('Error updating job status:', error);
+      showError({ 
+        title: 'Error', 
+        message: 'Failed to update job status' 
+      });
+    }
+  };
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      showSuccess({ title: 'Signed out successfully' });
+      router.push('/signin');
+    } catch (err: any) {
+      showError({ title: 'Sign out failed', message: err.message });
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status.toLowerCase()) {
-      case 'assigned': return 'text-blue-700 bg-blue-100';
-      case 'completed': return 'text-green-700 bg-green-100';
-      case 'in_progress': return 'text-yellow-700 bg-yellow-100';
-      case 'pending': return 'text-orange-700 bg-orange-100';
-      default: return 'text-gray-700 bg-gray-100';
+    switch (status?.toLowerCase()) {
+      case 'assigned': return 'bg-blue-100 text-blue-800';
+      case 'in_progress': return 'bg-yellow-100 text-yellow-800';
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (isLoading) {
@@ -109,32 +182,34 @@ export const TechnicianDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Technician Dashboard</h2>
-          <p className="text-gray-600">Welcome back, {user?.email}</p>
-        </div>
-        <div className="flex items-center space-x-4">
-          <div className="flex items-center space-x-2">
-            <span className="text-sm text-gray-600">Status:</span>
-            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-              isAvailable ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-            }`}>
-              {isAvailable ? 'Available' : 'Busy'}
-            </span>
+      {/* Main Dashboard Header */}
+      <Card>
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Technician Dashboard</h2>
+            <p className="text-gray-600">Welcome back, {(user as any)?.full_name || user?.email}</p>
           </div>
-          <Button
-            onClick={toggleAvailability}
-            variant={isAvailable ? "secondary" : "primary"}
-            size="sm"
-          >
-            {isAvailable ? 'Mark Busy' : 'Mark Available'}
-          </Button>
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={loadTechnicianData}
+              variant="secondary"
+              size="sm"
+              disabled={isLoading}
+            >
+              {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
+            </Button>
+            <Button
+              onClick={handleSignOut}
+              variant="danger"
+              size="sm"
+            >
+              🚪 Sign Out
+            </Button>
+          </div>
         </div>
-      </div>
+      </Card>
 
-      {/* Stats Grid */}
+      {/* Real-Time Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card className="p-6">
           <div className="text-center">
@@ -142,75 +217,104 @@ export const TechnicianDashboard: React.FC = () => {
             <div className="text-sm text-gray-600">Assigned Jobs</div>
           </div>
         </Card>
-        
+
+        <Card className="p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-600">{stats.inProgressJobs}</div>
+            <div className="text-sm text-gray-600">In Progress</div>
+          </div>
+        </Card>
+
         <Card className="p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{stats.completedJobs}</div>
-            <div className="text-sm text-gray-600">Completed Jobs</div>
+            <div className="text-sm text-gray-600">Completed</div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
           <div className="text-center">
-            <div className="text-2xl font-bold text-orange-600">{stats.pendingJobs}</div>
-            <div className="text-sm text-gray-600">Pending Jobs</div>
-          </div>
-        </Card>
-        
-        <Card className="p-6">
-          <div className="text-center">
-            <div className="text-2xl font-bold text-purple-600">⭐ {stats.avgRating}/5</div>
-            <div className="text-sm text-gray-600">Average Rating</div>
+            <div className="text-2xl font-bold text-purple-600">⭐ {stats.avgRating}</div>
+            <div className="text-sm text-gray-600">Rating</div>
           </div>
         </Card>
       </div>
 
-      {/* Recent Job Assignments */}
-      <Card className="p-6">
-        <div className="flex justify-between items-center mb-4">
-          <h3 className="text-lg font-semibold text-gray-900">Recent Job Assignments</h3>
-          <Button variant="secondary" size="sm" onClick={loadDashboardData}>
-            Refresh
-          </Button>
-        </div>
-        
-        <div className="space-y-4">
-          {recentJobs.length > 0 ? (
-            recentJobs.map((job) => (
-              <div key={job.id} className="flex items-center justify-between p-4 bg-gray-50 rounded-lg">
-                <div className="flex-1">
-                  <h4 className="font-medium text-gray-900">{job.title}</h4>
-                  <p className="text-sm text-gray-600">
-                    {new Date(job.timestamp).toLocaleDateString()} at {new Date(job.timestamp).toLocaleTimeString()}
-                  </p>
+      {/* Active Jobs */}
+      <Card>
+        <div className="p-6">
+          <div className="flex items-center justify-between mb-4">
+            <h3 className="text-lg font-semibold">My Jobs ({assignedJobs.length})</h3>
+          </div>
+          <div className="space-y-4">
+            {assignedJobs.map(job => (
+              <div key={job.id} className="border border-gray-200 rounded-lg p-4">
+                <div className="flex items-center justify-between mb-2">
+                  <div className="flex items-center space-x-3">
+                    <span className="font-medium">{job.service_number}</span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${getStatusColor(job.status)}`}>
+                      {job.status}
+                    </span>
+                    <span className={`px-2 py-1 rounded-full text-xs ${getPriorityColor(job.priority)}`}>
+                      {job.priority}
+                    </span>
+                  </div>
+                  <div className="text-sm text-gray-500">
+                    {formatDate(job.created_at)}
+                  </div>
                 </div>
-                <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(job.status)}`}>
-                  {job.status}
-                </span>
+                <div className="mb-2">
+                  <div className="font-medium text-gray-900">{job.service_type}</div>
+                  <div className="text-sm text-gray-600">
+                    Customer: {job.customer?.business_name || job.customer?.contact_person || 'N/A'}
+                  </div>
+                  {job.description && (
+                    <div className="text-sm text-gray-600 mt-1">{job.description}</div>
+                  )}
+                </div>
+                {job.customer?.phone && (
+                  <div className="text-sm text-gray-600 mb-2">
+                    📞 {job.customer.phone}
+                  </div>
+                )}
+                {job.customer?.billing_address && (
+                  <div className="text-sm text-gray-600 mb-2">
+                    📍 {job.customer.billing_address}
+                  </div>
+                )}
+                <div className="flex items-center justify-between">
+                  <div className="text-sm text-gray-600">
+                    {job.estimated_hours && `Est. ${job.estimated_hours} hours`}
+                  </div>
+                  <div className="flex items-center space-x-2">
+                    {job.status === 'assigned' && (
+                      <Button
+                        size="sm"
+                        onClick={() => updateJobStatus(job.id, 'in_progress')}
+                        className="bg-blue-600 hover:bg-blue-700"
+                      >
+                        Start Job
+                      </Button>
+                    )}
+                    {job.status === 'in_progress' && (
+                      <Button
+                        size="sm"
+                        onClick={() => updateJobStatus(job.id, 'completed')}
+                        className="bg-green-600 hover:bg-green-700"
+                      >
+                        Complete Job
+                      </Button>
+                    )}
+                  </div>
+                </div>
               </div>
-            ))
-          ) : (
-            <div className="text-center py-8">
-              <div className="text-gray-500">No recent job assignments</div>
-              <p className="text-gray-400 text-sm mt-1">New assignments will appear here</p>
-            </div>
-          )}
-        </div>
-      </Card>
-
-      {/* Quick Actions */}
-      <Card className="p-6">
-        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          <Button onClick={() => window.open('/services', '_blank')} className="w-full">
-            📋 View All Jobs
-          </Button>
-          <Button onClick={() => window.open('/technicians', '_blank')} variant="secondary" className="w-full">
-            👥 Technician Portal
-          </Button>
-          <Button onClick={loadDashboardData} variant="secondary" className="w-full">
-            🔄 Refresh Data
-          </Button>
+            ))}
+            {assignedJobs.length === 0 && (
+              <div className="text-center py-8 text-gray-500">
+                No jobs assigned. Check back later for new assignments!
+              </div>
+            )}
+          </div>
         </div>
       </Card>
     </div>

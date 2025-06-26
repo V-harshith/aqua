@@ -12,74 +12,44 @@ const supabaseAdmin = createClient(
   }
 );
 
-// POST - Assign technician to service
+// POST - Assign service to technician
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
-    const {
-      service_id,
-      technician_id,
-      scheduled_date,
-      estimated_hours,
-      assignment_notes
-    } = body;
+    const { service_id, technician_id } = body;
 
     // Validate required fields
     if (!service_id || !technician_id) {
       return NextResponse.json({ 
-        error: 'Service ID and Technician ID are required' 
+        error: 'Service ID and technician ID are required' 
       }, { status: 400 });
     }
 
-    // Check if technician exists and is active
-    const { data: technician, error: techError } = await supabaseAdmin
-      .from('users')
-      .select('id, full_name, role, is_active')
-      .eq('id', technician_id)
-      .single();
-
-    if (techError || !technician) {
-      return NextResponse.json({ 
-        error: 'Technician not found' 
-      }, { status: 404 });
-    }
-
-    if (!technician.is_active || technician.role !== 'technician') {
-      return NextResponse.json({ 
-        error: 'Invalid technician or technician is not active' 
-      }, { status: 400 });
-    }
-
-    // Update service with assignment
-    const updateData: any = {
-      assigned_technician: technician_id,
-      status: 'assigned'
-    };
-
-    if (scheduled_date) updateData.scheduled_date = scheduled_date;
-    if (estimated_hours) updateData.estimated_hours = estimated_hours;
-    if (assignment_notes) updateData.service_notes = assignment_notes;
-
+    // Update the service with assigned technician
     const { data, error } = await supabaseAdmin
       .from('services')
-      .update(updateData)
+      .update({ 
+        assigned_technician: technician_id,
+        status: 'assigned'
+      })
       .eq('id', service_id)
       .select(`
         *,
-        customer:customers(customer_code, business_name, contact_person),
+        customer:customers(customer_code, business_name, contact_person, billing_address),
         technician:users!services_assigned_technician_fkey(full_name, email, phone),
         complaint:complaints(complaint_number, title, priority)
       `)
       .single();
 
     if (error) {
-      console.error('Error assigning technician:', error);
+      console.error('Error assigning service:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
     return NextResponse.json({ 
-      message: 'Technician assigned successfully',
-      service: data 
+      success: true,
+      service: data,
+      message: 'Service assigned successfully'
     });
 
   } catch (error) {

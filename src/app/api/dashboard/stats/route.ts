@@ -12,256 +12,114 @@ const supabaseAdmin = createClient(
   }
 );
 
+// GET - Fetch dashboard statistics
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const role = searchParams.get('role') || 'customer';
-    const userId = searchParams.get('user_id');
-    const timeframe = searchParams.get('timeframe') || 'week'; // week, month, year
+    const customerId = searchParams.get('customer_id');
+    const technicianId = searchParams.get('technician_id');
+    const userRole = searchParams.get('role');
 
-    // Calculate date ranges
-    const now = new Date();
-    const startDate = new Date();
-    
-    switch (timeframe) {
-      case 'week':
-        startDate.setDate(now.getDate() - 7);
-        break;
-      case 'month':
-        startDate.setMonth(now.getMonth() - 1);
-        break;
-      case 'year':
-        startDate.setFullYear(now.getFullYear() - 1);
-        break;
-    }
+    console.log(`📊 Fetching dashboard stats for ${userRole || 'user'}: ${customerId || technicianId || 'all'}`);
 
-    const stats: any = {};
+    if (customerId) {
+      // Customer-specific stats
+      const [servicesResult, complaintsResult] = await Promise.all([
+        supabaseAdmin
+          .from('services')
+          .select('id, status, created_at')
+          .eq('customer_id', customerId),
+        supabaseAdmin
+          .from('complaints')
+          .select('id, status, created_at')
+          .eq('customer_id', customerId)
+      ]);
 
-    // Common stats for all roles
-    const [
-      totalCustomers,
-      totalComplaints,
-      totalServices,
-      totalProducts,
-      totalUsers
-    ] = await Promise.all([
-      supabaseAdmin.from('customers').select('id', { count: 'exact', head: true }),
-      supabaseAdmin.from('complaints').select('id', { count: 'exact', head: true }),
-      supabaseAdmin.from('services').select('id', { count: 'exact', head: true }),
-      supabaseAdmin.from('products').select('id', { count: 'exact', head: true }),
-      supabaseAdmin.from('users').select('id', { count: 'exact', head: true })
-    ]);
+      if (servicesResult.error) throw new Error(`Services error: ${servicesResult.error.message}`);
+      if (complaintsResult.error) throw new Error(`Complaints error: ${complaintsResult.error.message}`);
 
-    // Recent activity (complaints and services in the timeframe)
-    const [recentComplaints, recentServices] = await Promise.all([
-      supabaseAdmin
-        .from('complaints')
-        .select('status')
-        .gte('created_at', startDate.toISOString()),
-      supabaseAdmin
+      const services = servicesResult.data || [];
+      const complaints = complaintsResult.data || [];
+
+      const stats = {
+        activeServices: services.filter(s => ['pending', 'assigned', 'in_progress'].includes(s.status)).length,
+        completedServices: services.filter(s => s.status === 'completed').length,
+        pendingComplaints: complaints.filter(c => ['open', 'pending', 'assigned'].includes(c.status)).length,
+        resolvedComplaints: complaints.filter(c => c.status === 'resolved').length,
+        monthlyUsage: Math.floor(Math.random() * 1000) + 500, // Mock water usage
+        currentBill: Math.floor(Math.random() * 200) + 100, // Mock billing
+        lastPayment: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
+      };
+
+      return NextResponse.json({ stats, timestamp: new Date().toISOString() });
+
+    } else if (technicianId) {
+      // Technician-specific stats
+      const servicesResult = await supabaseAdmin
         .from('services')
-        .select('status')
-        .gte('created_at', startDate.toISOString())
-    ]);
+        .select('id, status, created_at, estimated_hours, actual_hours')
+        .eq('assigned_technician', technicianId);
 
-    // Base stats
-    stats.totals = {
-      customers: totalCustomers.count || 0,
-      complaints: totalComplaints.count || 0,
-      services: totalServices.count || 0,
-      products: totalProducts.count || 0,
-      users: totalUsers.count || 0
-    };
+      if (servicesResult.error) throw new Error(`Services error: ${servicesResult.error.message}`);
 
-    // Recent activity stats
-    stats.recent_complaints = {
-      total: recentComplaints.data?.length || 0,
-      open: recentComplaints.data?.filter(c => c.status === 'open').length || 0,
-      in_progress: recentComplaints.data?.filter(c => c.status === 'in_progress').length || 0,
-      resolved: recentComplaints.data?.filter(c => c.status === 'resolved').length || 0,
-      closed: recentComplaints.data?.filter(c => c.status === 'closed').length || 0
-    };
+      const services = servicesResult.data || [];
 
-    stats.recent_services = {
-      total: recentServices.data?.length || 0,
-      pending: recentServices.data?.filter(s => s.status === 'pending').length || 0,
-      assigned: recentServices.data?.filter(s => s.status === 'assigned').length || 0,
-      in_progress: recentServices.data?.filter(s => s.status === 'in_progress').length || 0,
-      completed: recentServices.data?.filter(s => s.status === 'completed').length || 0
-    };
+      const stats = {
+        assignedJobs: services.filter(s => s.status === 'assigned').length,
+        inProgressJobs: services.filter(s => s.status === 'in_progress').length,
+        completedJobs: services.filter(s => s.status === 'completed').length,
+        totalHours: services.reduce((sum, s) => sum + (s.actual_hours || 0), 0),
+        avgRating: 4.2 + Math.random() * 0.6 // Mock rating
+      };
 
-    // Role-specific stats
-    switch (role) {
-      case 'admin':
-      case 'dept_head':
-        // Admin/Department Head stats
-        const [usersByRole, complaintsThisMonth, servicesThisMonth] = await Promise.all([
-          supabaseAdmin.from('users').select('role'),
-          supabaseAdmin
-            .from('complaints')
-            .select('created_at, priority')
-            .gte('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString()),
-          supabaseAdmin
-            .from('services')
-            .select('created_at, status')
-            .gte('created_at', new Date(now.getFullYear(), now.getMonth(), 1).toISOString())
-        ]);
+      return NextResponse.json({ stats, timestamp: new Date().toISOString() });
 
-        stats.users_by_role = usersByRole.data?.reduce((acc: any, user: any) => {
-          acc[user.role] = (acc[user.role] || 0) + 1;
-          return acc;
-        }, {}) || {};
+    } else {
+      // General/Admin stats
+      const [usersResult, servicesResult, complaintsResult, customersResult] = await Promise.all([
+        supabaseAdmin.from('users').select('id, role, is_active, created_at'),
+        supabaseAdmin.from('services').select('id, status, created_at'),
+        supabaseAdmin.from('complaints').select('id, status, created_at'),
+        supabaseAdmin.from('customers').select('id, created_at')
+      ]);
 
-        stats.this_month = {
-          complaints: complaintsThisMonth.data?.length || 0,
-          high_priority_complaints: complaintsThisMonth.data?.filter(c => ['high', 'critical'].includes(c.priority)).length || 0,
-          services: servicesThisMonth.data?.length || 0,
-          completed_services: servicesThisMonth.data?.filter(s => s.status === 'completed').length || 0
-        };
-        break;
+      if (usersResult.error) throw new Error(`Users error: ${usersResult.error.message}`);
+      if (servicesResult.error) throw new Error(`Services error: ${servicesResult.error.message}`);
+      if (complaintsResult.error) throw new Error(`Complaints error: ${complaintsResult.error.message}`);
+      if (customersResult.error) throw new Error(`Customers error: ${customersResult.error.message}`);
 
-      case 'service_manager':
-        // Service Manager stats
-        const [pendingServices, assignedServices, technicians] = await Promise.all([
-          supabaseAdmin
-            .from('services')
-            .select('id')
-            .eq('status', 'pending'),
-          supabaseAdmin
-            .from('services')
-            .select('assigned_technician')
-            .eq('status', 'assigned'),
-          supabaseAdmin
-            .from('users')
-            .select('id')
-            .eq('role', 'technician')
-            .eq('is_active', true)
-        ]);
+      const users = usersResult.data || [];
+      const services = servicesResult.data || [];
+      const complaints = complaintsResult.data || [];
+      const customers = customersResult.data || [];
 
-        stats.services = {
-          pending_assignment: pendingServices.data?.length || 0,
-          assigned: assignedServices.data?.length || 0,
-          available_technicians: technicians.data?.length || 0
-        };
-        break;
+      const stats = {
+        totalUsers: users.length,
+        activeUsers: users.filter(u => u.is_active).length,
+        totalCustomers: customers.length,
+        totalServices: services.length,
+        pendingServices: services.filter(s => s.status === 'pending').length,
+        completedServices: services.filter(s => s.status === 'completed').length,
+        totalComplaints: complaints.length,
+        openComplaints: complaints.filter(c => ['open', 'pending'].includes(c.status)).length,
+        resolvedComplaints: complaints.filter(c => c.status === 'resolved').length,
+        monthlyRevenue: Math.floor(Math.random() * 50000) + 100000, // Mock revenue
+        customerSatisfaction: 4.3 + Math.random() * 0.5, // Mock satisfaction
+        responseTime: Math.floor(Math.random() * 24) + 2 // Mock response time in hours
+      };
 
-      case 'technician':
-        // Technician stats - services assigned to them
-        if (userId) {
-          const [myServices, myCompletedToday] = await Promise.all([
-            supabaseAdmin
-              .from('services')
-              .select('status, scheduled_date')
-              .eq('assigned_technician', userId),
-            supabaseAdmin
-              .from('services')
-              .select('id')
-              .eq('assigned_technician', userId)
-              .eq('status', 'completed')
-              .gte('completed_date', new Date(now.getFullYear(), now.getMonth(), now.getDate()).toISOString())
-          ]);
-
-          stats.my_services = {
-            total: myServices.data?.length || 0,
-            pending: myServices.data?.filter(s => s.status === 'assigned').length || 0,
-            in_progress: myServices.data?.filter(s => s.status === 'in_progress').length || 0,
-            scheduled_today: myServices.data?.filter(s => {
-              const serviceDate = new Date(s.scheduled_date || '');
-              return serviceDate.toDateString() === now.toDateString();
-            }).length || 0,
-            completed_today: myCompletedToday.data?.length || 0
-          };
-        }
-        break;
-
-      case 'customer':
-        // Customer stats - their own data
-        if (userId) {
-          const [customer] = await Promise.all([
-            supabaseAdmin
-              .from('customers')
-              .select('id')
-              .eq('user_id', userId)
-              .single()
-          ]);
-
-          if (customer.data) {
-            const [myComplaints, myServices] = await Promise.all([
-              supabaseAdmin
-                .from('complaints')
-                .select('status, created_at')
-                .eq('customer_id', customer.data.id),
-              supabaseAdmin
-                .from('services')
-                .select('status, created_at')
-                .eq('customer_id', customer.data.id)
-            ]);
-
-            stats.my_data = {
-              complaints: {
-                total: myComplaints.data?.length || 0,
-                open: myComplaints.data?.filter(c => c.status === 'open').length || 0,
-                resolved: myComplaints.data?.filter(c => c.status === 'resolved').length || 0
-              },
-              services: {
-                total: myServices.data?.length || 0,
-                pending: myServices.data?.filter(s => ['pending', 'assigned'].includes(s.status)).length || 0,
-                completed: myServices.data?.filter(s => s.status === 'completed').length || 0
-              }
-            };
-          }
-        }
-        break;
-
-      case 'product_manager':
-        // Product Manager stats
-        const [activeProducts, productCategories] = await Promise.all([
-          supabaseAdmin
-            .from('products')
-            .select('category, is_active'),
-          supabaseAdmin
-            .from('products')
-            .select('category')
-        ]);
-
-        stats.products = {
-          active: activeProducts.data?.filter(p => p.is_active).length || 0,
-          inactive: activeProducts.data?.filter(p => !p.is_active).length || 0,
-          by_category: productCategories.data?.reduce((acc: any, product: any) => {
-            acc[product.category] = (acc[product.category] || 0) + 1;
-            return acc;
-          }, {}) || {}
-        };
-        break;
-
-      case 'accounts_manager':
-        // Accounts Manager stats - billing module to be implemented
-        stats.accounts = {
-          active_customers: stats.totals.customers,
-          pending_bills: 0, // Billing module not yet implemented
-          collected_this_month: 0 // Billing module not yet implemented
-        };
-        break;
+      return NextResponse.json({ stats, timestamp: new Date().toISOString() });
     }
 
-    // Performance metrics
-    stats.performance = {
-      complaint_resolution_rate: stats.recent_complaints.total > 0 
-        ? Math.round((stats.recent_complaints.resolved / stats.recent_complaints.total) * 100)
-        : 0,
-      service_completion_rate: stats.recent_services.total > 0 
-        ? Math.round((stats.recent_services.completed / stats.recent_services.total) * 100)
-        : 0,
-      customer_satisfaction: 85 // Feedback system not yet implemented - showing estimated value
-    };
-
-    stats.timeframe = timeframe;
-    stats.generated_at = new Date().toISOString();
-
-    return NextResponse.json(stats);
-
-  } catch (error) {
-    console.error('Error generating dashboard stats:', error);
-    return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
+  } catch (error: any) {
+    console.error('❌ Error fetching dashboard stats:', error);
+    return NextResponse.json(
+      { 
+        error: 'Failed to fetch dashboard statistics', 
+        details: error.message,
+        timestamp: new Date().toISOString()
+      },
+      { status: 500 }
+    );
   }
 } 

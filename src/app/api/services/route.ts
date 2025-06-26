@@ -35,18 +35,13 @@ async function generateServiceNumber(): Promise<string> {
   return `SRV${year}${month}${String(sequence).padStart(4, '0')}`;
 }
 
-// GET - List all services with filtering and pagination
+// GET - Fetch services
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
-    const service_type = searchParams.get('service_type') || '';
-    const assigned_technician = searchParams.get('assigned_technician') || '';
-    const customer_id = searchParams.get('customer_id') || '';
-    const offset = (page - 1) * limit;
+    const customerId = searchParams.get('customer_id');
+    const technicianId = searchParams.get('technician_id');
+    const status = searchParams.get('status');
 
     let query = supabaseAdmin
       .from('services')
@@ -55,47 +50,35 @@ export async function GET(request: NextRequest) {
         customer:customers(customer_code, business_name, contact_person, billing_address),
         technician:users!services_assigned_technician_fkey(full_name, email, phone),
         complaint:complaints(complaint_number, title, priority)
-      `, { count: 'exact' });
+      `)
+      .order('created_at', { ascending: false });
 
     // Apply filters
-    if (search) {
-      query = query.or(`service_number.ilike.%${search}%,description.ilike.%${search}%,service_type.ilike.%${search}%`);
+    if (customerId) {
+      query = query.eq('customer_id', customerId);
     }
-
+    
+    if (technicianId) {
+      query = query.eq('assigned_technician', technicianId);
+    }
+    
     if (status) {
       query = query.eq('status', status);
     }
 
-    if (service_type) {
-      query = query.eq('service_type', service_type);
-    }
-
-    if (assigned_technician) {
-      query = query.eq('assigned_technician', assigned_technician);
-    }
-
-    if (customer_id) {
-      query = query.eq('customer_id', customer_id);
-    }
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
-
-    const { data, error, count } = await query;
+    const { data: services, error } = await query;
 
     if (error) {
       console.error('Error fetching services:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      services: data,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        pages: Math.ceil((count || 0) / limit)
-      }
+    console.log(`✅ Fetched ${services?.length || 0} services`);
+
+    return NextResponse.json({ 
+      services: services || [],
+      count: services?.length || 0,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
@@ -104,18 +87,19 @@ export async function GET(request: NextRequest) {
   }
 }
 
-// POST - Create new service request
+// POST - Create new service
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    
     const {
       customer_id,
-      complaint_id,
       service_type,
       description,
+      priority = 'medium',
       scheduled_date,
       estimated_hours,
-      assigned_technician
+      complaint_id
     } = body;
 
     // Validate required fields
@@ -126,28 +110,24 @@ export async function POST(request: NextRequest) {
     }
 
     // Generate service number
-    const service_number = await generateServiceNumber();
+    const serviceNumber = `SRV-${Date.now().toString().slice(-6)}`;
 
-    const serviceData: any = {
-      service_number,
-      customer_id,
-      service_type,
-      description,
-      status: assigned_technician ? 'assigned' : 'pending',
-      estimated_hours
-    };
-
-    if (complaint_id) serviceData.complaint_id = complaint_id;
-    if (scheduled_date) serviceData.scheduled_date = scheduled_date;
-    if (assigned_technician) serviceData.assigned_technician = assigned_technician;
-
-    const { data, error } = await supabaseAdmin
+    const { data: service, error } = await supabaseAdmin
       .from('services')
-      .insert([serviceData])
+      .insert({
+        service_number: serviceNumber,
+        customer_id,
+        service_type,
+        description,
+        priority,
+        scheduled_date,
+        estimated_hours,
+        complaint_id,
+        status: 'pending'
+      })
       .select(`
         *,
-        customer:customers(customer_code, business_name, contact_person, billing_address),
-        technician:users!services_assigned_technician_fkey(full_name, email, phone),
+        customer:customers(customer_code, business_name, contact_person),
         complaint:complaints(complaint_number, title, priority)
       `)
       .single();
@@ -157,7 +137,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ service: data }, { status: 201 });
+    console.log(`✅ Created service: ${serviceNumber}`);
+
+    return NextResponse.json({ 
+      success: true,
+      service,
+      message: 'Service created successfully'
+    });
 
   } catch (error) {
     console.error('Unexpected error:', error);

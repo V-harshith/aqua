@@ -6,6 +6,7 @@ import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
+import { useRouter } from 'next/navigation';
 
 interface ProductStats {
   totalProducts: number;
@@ -52,6 +53,7 @@ interface InventoryMovement {
 export const ProductManagerDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
+  const router = useRouter();
   const [stats, setStats] = useState<ProductStats>({
     totalProducts: 0,
     activeProducts: 0,
@@ -247,6 +249,17 @@ export const ProductManagerDashboard: React.FC = () => {
     }).format(amount);
   };
 
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      showSuccess({ title: 'Signed out successfully' });
+      router.push('/signin');
+    } catch (err: any) {
+      showError({ title: 'Sign out failed', message: err.message });
+    }
+  };
+
   if (user?.role !== 'product_manager') {
     return (
       <Card className="p-6">
@@ -273,6 +286,33 @@ export const ProductManagerDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
+      {/* Main Dashboard Header */}
+      <Card>
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-900">Product Manager Dashboard</h1>
+            <p className="text-gray-600">Inventory and Product Management</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={loadDashboardData}
+              variant="secondary"
+              size="sm"
+              disabled={isLoading}
+            >
+              {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
+            </Button>
+            <Button
+              onClick={handleSignOut}
+              variant="danger"
+              size="sm"
+            >
+              🚪 Sign Out
+            </Button>
+          </div>
+        </div>
+      </Card>
+
       {/* Product Statistics */}
       <div className="grid grid-cols-1 md:grid-cols-3 lg:grid-cols-6 gap-4">
         <Card className="p-4">

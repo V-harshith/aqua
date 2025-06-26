@@ -35,67 +35,54 @@ async function generateComplaintNumber(): Promise<string> {
   return `CMP${year}${month}${String(sequence).padStart(4, '0')}`;
 }
 
-// GET - List all complaints with filtering and pagination
+// GET - Fetch complaints
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const page = parseInt(searchParams.get('page') || '1');
-    const limit = parseInt(searchParams.get('limit') || '10');
-    const search = searchParams.get('search') || '';
-    const status = searchParams.get('status') || '';
-    const priority = searchParams.get('priority') || '';
-    const category = searchParams.get('category') || '';
-    const assigned_to = searchParams.get('assigned_to') || '';
-    const offset = (page - 1) * limit;
+    const customerId = searchParams.get('customer_id');
+    const assignedTo = searchParams.get('assigned_to');
+    const status = searchParams.get('status');
+    const priority = searchParams.get('priority');
 
     let query = supabaseAdmin
       .from('complaints')
       .select(`
         *,
-        customer:customers(customer_code, business_name, contact_person),
-        assigned_technician:users!complaints_assigned_to_fkey(full_name, email),
-        reporter:users!complaints_reported_by_fkey(full_name, email)
-      `, { count: 'exact' });
+        customer:customers(customer_code, business_name, contact_person, billing_address),
+        assigned_user:users!complaints_assigned_to_fkey(full_name, email, phone)
+      `)
+      .order('created_at', { ascending: false });
 
     // Apply filters
-    if (search) {
-      query = query.or(`complaint_number.ilike.%${search}%,title.ilike.%${search}%,description.ilike.%${search}%`);
+    if (customerId) {
+      query = query.eq('customer_id', customerId);
     }
-
+    
+    if (assignedTo) {
+      query = query.eq('assigned_to', assignedTo);
+    }
+    
     if (status) {
       query = query.eq('status', status);
     }
-
+    
     if (priority) {
       query = query.eq('priority', priority);
     }
 
-    if (category) {
-      query = query.eq('category', category);
-    }
-
-    if (assigned_to) {
-      query = query.eq('assigned_to', assigned_to);
-    }
-
-    // Apply pagination
-    query = query.range(offset, offset + limit - 1).order('created_at', { ascending: false });
-
-    const { data, error, count } = await query;
+    const { data: complaints, error } = await query;
 
     if (error) {
       console.error('Error fetching complaints:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({
-      complaints: data,
-      pagination: {
-        page,
-        limit,
-        total: count || 0,
-        pages: Math.ceil((count || 0) / limit)
-      }
+    console.log(`✅ Fetched ${complaints?.length || 0} complaints`);
+
+    return NextResponse.json({ 
+      complaints: complaints || [],
+      count: complaints?.length || 0,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
@@ -108,6 +95,7 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
+    
     const {
       customer_id,
       title,
@@ -119,33 +107,31 @@ export async function POST(request: NextRequest) {
     } = body;
 
     // Validate required fields
-    if (!customer_id || !title || !description || !category) {
+    if (!customer_id || !title || !description) {
       return NextResponse.json({ 
-        error: 'Customer ID, title, description, and category are required' 
+        error: 'Customer ID, title, and description are required' 
       }, { status: 400 });
     }
 
     // Generate complaint number
-    const complaint_number = await generateComplaintNumber();
+    const complaintNumber = `CMP-${Date.now().toString().slice(-6)}`;
 
-    const { data, error } = await supabaseAdmin
+    const { data: complaint, error } = await supabaseAdmin
       .from('complaints')
-      .insert([{
-        complaint_number,
+      .insert({
+        complaint_number: complaintNumber,
         customer_id,
         title,
         description,
-        category,
+        category: category || 'general',
         priority,
         location,
         reported_by,
         status: 'open'
-      }])
+      })
       .select(`
         *,
-        customer:customers(customer_code, business_name, contact_person),
-        assigned_technician:users!complaints_assigned_to_fkey(full_name, email),
-        reporter:users!complaints_reported_by_fkey(full_name, email)
+        customer:customers(customer_code, business_name, contact_person)
       `)
       .single();
 
@@ -154,7 +140,13 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ complaint: data }, { status: 201 });
+    console.log(`✅ Created complaint: ${complaintNumber}`);
+
+    return NextResponse.json({ 
+      success: true,
+      complaint,
+      message: 'Complaint created successfully'
+    });
 
   } catch (error) {
     console.error('Unexpected error:', error);

@@ -2,10 +2,24 @@
 
 import { useAuthContext } from '@/context/AuthContext';
 import { RoleBasedNavigation } from '@/components/ui/RoleBasedNavigation';
+import { supabase } from '@/lib/supabase';
+import { useRouter } from 'next/navigation';
+import Button from '@/components/ui/Button';
 import Link from 'next/link';
 
 export function ManagerDashboard() {
   const { userProfile } = useAuthContext();
+  const router = useRouter();
+
+  const handleSignOut = async () => {
+    try {
+      const { error } = await supabase.auth.signOut();
+      if (error) throw error;
+      router.push('/signin');
+    } catch (err: any) {
+      console.error('Sign out failed:', err);
+    }
+  };
 
   // Role-specific stats based on manager type
   const getManagerStats = () => {
@@ -52,8 +66,17 @@ export function ManagerDashboard() {
             <h1 className="text-2xl font-bold text-gray-900">Manager Dashboard</h1>
             <p className="text-gray-600">Department Operations & Management</p>
           </div>
-          <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
-            <span className="text-green-600 text-sm font-medium">🏢 Manager</span>
+          <div className="flex items-center space-x-4">
+            <div className="flex items-center bg-green-50 px-3 py-2 rounded-lg">
+              <span className="text-green-600 text-sm font-medium">🏢 Manager</span>
+            </div>
+            <Button
+              onClick={handleSignOut}
+              variant="danger"
+              size="sm"
+            >
+              🚪 Sign Out
+            </Button>
           </div>
         </div>
       </div>

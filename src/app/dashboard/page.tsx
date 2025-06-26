@@ -12,6 +12,7 @@ import { AccountsManagerDashboard } from '@/components/dashboard/AccountsManager
 import { ProductManagerDashboard } from '@/components/dashboard/ProductManagerDashboard';
 import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
 import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
+import { supabase } from '@/lib/supabase';
 
 export default function DashboardPage() {
   const { user, userProfile, loading } = useAuthContext();
@@ -25,8 +26,6 @@ export default function DashboardPage() {
 
   const handleSignOut = async () => {
     try {
-      const { createClient } = await import('@/lib/supabase');
-      const supabase = createClient();
       await supabase.auth.signOut();
       router.push('/signin');
     } catch (error) {
@@ -126,4 +125,4 @@ export default function DashboardPage() {
       </main>
     </div>
   );
-}
+} 

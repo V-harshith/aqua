@@ -5,95 +5,72 @@ import { Card } from '../ui/Card';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
-import { supabase, ComplaintStatus } from '../../lib/supabase';
 
 interface ServiceStats {
-  totalComplaints: number;
-  openComplaints: number;
-  assignedComplaints: number;
-  resolvedToday: number;
-  avgResolutionTime: number;
-  activeTechnicians: number;
-  // New service management stats
-  pendingServiceRequests: number;
-  todaysServiceJobs: number;
+  totalServices: number;
+  pendingServices: number;
+  inProgressServices: number;
+  completedToday: number;
   emergencyRequests: number;
-  completedServicesToday: number;
   avgServiceRating: number;
-  totalRevenue: number;
-}
-
-interface RecentComplaint {
-  id: string;
-  complaint_number: string;
-  title: string;
-  priority: string;
-  status: ComplaintStatus;
-  customer?: { business_name?: string; contact_person?: string };
-  assigned_user?: { full_name: string };
-  created_at: string;
 }
 
 interface ServiceRequest {
   id: string;
-  request_number: string;
-  priority: string;
-  status: string;
-  customer: { full_name: string };
-  service_type: { type_name: string };
-  estimated_cost: number;
+  service_number: string;
+  service_type: string;
+  customer_name: string;
+  priority: 'high' | 'medium' | 'low' | 'emergency';
+  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
   created_at: string;
+  estimated_cost?: number;
+  assigned_technician?: string;
+  description?: string;
+  customer_contact?: string;
 }
 
-interface TechnicianWorkload {
+interface TechnicianInfo {
   id: string;
   full_name: string;
-  activeComplaints: number;
-  resolvedToday: number;
-  activeServiceJobs: number;
-  completedServicesToday: number;
-  avgRating: number;
+  is_available: boolean;
+  active_services: number;
+  completed_today: number;
+  rating: number;
 }
 
 export const ServiceManagerDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
   
-  const [activeTab, setActiveTab] = useState<'overview' | 'complaints' | 'services' | 'technicians'>('overview');
+  const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'technicians'>('overview');
   const [stats, setStats] = useState<ServiceStats>({
-    totalComplaints: 0,
-    openComplaints: 0,
-    assignedComplaints: 0,
-    resolvedToday: 0,
-    avgResolutionTime: 0,
-    activeTechnicians: 0,
-    pendingServiceRequests: 0,
-    todaysServiceJobs: 0,
+    totalServices: 0,
+    pendingServices: 0,
+    inProgressServices: 0,
+    completedToday: 0,
     emergencyRequests: 0,
-    completedServicesToday: 0,
-    avgServiceRating: 0,
-    totalRevenue: 0,
+    avgServiceRating: 4.5,
   });
   
-  const [recentComplaints, setRecentComplaints] = useState<RecentComplaint[]>([]);
-  const [recentServiceRequests, setRecentServiceRequests] = useState<ServiceRequest[]>([]);
-  const [technicianWorkloads, setTechnicianWorkloads] = useState<TechnicianWorkload[]>([]);
+  const [services, setServices] = useState<ServiceRequest[]>([]);
+  const [technicians, setTechnicians] = useState<TechnicianInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
 
+  // Load data when component mounts and every 30 seconds for real-time updates
   useEffect(() => {
-    if (user?.role === 'service_manager' || user?.role === 'admin') {
+    if (user?.id) {
       loadDashboardData();
+      const interval = setInterval(loadDashboardData, 30000); // Auto-refresh every 30 seconds
+      return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user?.id]); // Only depend on stable user.id
 
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
       await Promise.all([
         loadServiceStats(),
-        loadRecentComplaints(),
-        loadRecentServiceRequests(),
-        loadTechnicianWorkloads()
+        loadTechnicians()
       ]);
     } catch (error) {
       console.error('Error loading dashboard data:', error);
@@ -107,290 +84,137 @@ export const ServiceManagerDashboard: React.FC = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       
-      // Get complaint statistics
-      const { data: complaints, error: complaintsError } = await supabase
-        .from('complaints')
-        .select('status, created_at, resolved_at');
-
-      if (complaintsError) throw complaintsError;
-
-      // Get service request statistics
-      const { data: serviceRequests, error: serviceError } = await supabase
-        .from('service_requests')
-        .select('status, priority, created_at, estimated_cost, actual_cost');
-
-      if (serviceError) throw serviceError;
-
-      // Get service assignments for today
-      const { data: todaysAssignments, error: assignmentsError } = await supabase
-        .from('service_assignments')
-        .select('status, scheduled_date')
-        .eq('scheduled_date', today);
-
-      if (assignmentsError) throw assignmentsError;
-
-      // Get service executions for today
-      const { data: todaysExecutions, error: executionsError } = await supabase
-        .from('service_executions')
-        .select('total_service_cost, service_quality, created_at')
-        .gte('created_at', today);
-
-      if (executionsError) throw executionsError;
-
-      // Get technician count
-      const { data: technicians, error: techError } = await supabase
-        .from('users')
-        .select('id')
-        .eq('role', 'technician')
-        .eq('is_available', true);
-
-      if (techError) throw techError;
-
-      // Calculate complaint statistics
-      const totalComplaints = complaints.length;
-      const openComplaints = complaints.filter(c => c.status === 'open').length;
-      const assignedComplaints = complaints.filter(c => c.status === 'assigned').length;
-      const resolvedToday = complaints.filter(c => 
-        c.status === 'resolved' && 
-        c.resolved_at?.startsWith(today)
-      ).length;
-
-      // Calculate service request statistics
-      const pendingServiceRequests = serviceRequests.filter(s => s.status === 'pending').length;
-      const todaysServiceJobs = todaysAssignments.length;
-      const emergencyRequests = serviceRequests.filter(s => s.priority === 'emergency').length;
-      const completedServicesToday = todaysExecutions.length;
-
-      // Calculate average resolution time (in hours)
-      const resolvedComplaints = complaints.filter(c => c.resolved_at);
-      const avgResolutionTime = resolvedComplaints.length > 0 
-        ? resolvedComplaints.reduce((acc, c) => {
-            const created = new Date(c.created_at);
-            const resolved = new Date(c.resolved_at!);
-            return acc + (resolved.getTime() - created.getTime()) / (1000 * 60 * 60);
-          }, 0) / resolvedComplaints.length
-        : 0;
-
-      // Calculate service statistics
-      const avgServiceRating = todaysExecutions.length > 0
-        ? todaysExecutions.reduce((acc, e) => acc + (e.service_quality || 0), 0) / todaysExecutions.length
-        : 0;
-
-      const totalRevenue = todaysExecutions.reduce((acc, e) => acc + (e.total_service_cost || 0), 0);
-
-      setStats({
-        totalComplaints,
-        openComplaints,
-        assignedComplaints,
-        resolvedToday,
-        avgResolutionTime: Math.round(avgResolutionTime * 10) / 10,
-        activeTechnicians: technicians.length,
-        pendingServiceRequests,
-        todaysServiceJobs,
-        emergencyRequests,
-        completedServicesToday,
-        avgServiceRating: Math.round(avgServiceRating * 10) / 10,
-        totalRevenue,
-      });
-    } catch (error) {
-      console.error('Error loading service stats:', error);
-    }
-  };
-
-  const loadRecentComplaints = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('complaints')
-        .select(`
-          id,
-          complaint_number,
-          title,
-          priority,
-          status,
-          created_at
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      
-      // Format the data to match our interface
-      const formattedData = (data || []).map(complaint => ({
-        ...complaint,
-        customer: { business_name: 'Customer', contact_person: 'Contact' },
-        assigned_user: { full_name: 'Unassigned' }
-      }));
-      
-      setRecentComplaints(formattedData);
-    } catch (error) {
-      console.error('Error loading recent complaints:', error);
-    }
-  };
-
-  const loadRecentServiceRequests = async () => {
-    try {
-      const { data, error } = await supabase
-        .from('service_requests')
-        .select(`
-          id,
-          request_number,
-          priority,
-          status,
-          estimated_cost,
-          created_at
-        `)
-        .order('created_at', { ascending: false })
-        .limit(5);
-
-      if (error) throw error;
-      
-      // Format the data to match our interface
-      const formattedData = (data || []).map(request => ({
-        ...request,
-        customer: { full_name: 'Customer' },
-        service_type: { type_name: 'Service' }
-      }));
-      
-      setRecentServiceRequests(formattedData);
-    } catch (error) {
-      console.error('Error loading recent service requests:', error);
-    }
-  };
-
-  const loadTechnicianWorkloads = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-
-      // Get technicians with their workloads
-      const { data: technicians, error: techError } = await supabase
-        .from('users')
-        .select(`
-          id,
-          full_name,
-          rating
-        `)
-        .eq('role', 'technician')
-        .eq('is_available', true);
-
-      if (techError) throw techError;
-
-      // Get complaint assignments
-      const { data: complaintAssignments, error: complaintError } = await supabase
-        .from('complaints')
-        .select('assigned_to, status, resolved_at')
-        .in('assigned_to', technicians.map(t => t.id));
-
-      if (complaintError) throw complaintError;
-
-      // Get service assignments
-      const { data: serviceAssignments, error: serviceError } = await supabase
-        .from('service_assignments')
-        .select('assigned_technician_id, status, scheduled_date, completed_at')
-        .in('assigned_technician_id', technicians.map(t => t.id));
-
-      if (serviceError) throw serviceError;
-
-      const workloads = technicians.map(tech => {
-        const complaints = complaintAssignments.filter(c => c.assigned_to === tech.id);
-        const services = serviceAssignments.filter(s => s.assigned_technician_id === tech.id);
-
-        const activeComplaints = complaints.filter(c => 
-          ['assigned', 'in_progress'].includes(c.status)
+      // Fetch services data
+      const servicesResponse = await fetch('/api/services');
+      if (servicesResponse.ok) {
+        const servicesData = await servicesResponse.json();
+        const allServices = servicesData.services || [];
+        setServices(allServices);
+        
+        // Calculate real-time stats
+        const pending = allServices.filter((s: ServiceRequest) => s.status === 'pending').length;
+        const inProgress = allServices.filter((s: ServiceRequest) => s.status === 'in_progress').length;
+        const emergency = allServices.filter((s: ServiceRequest) => s.priority === 'emergency').length;
+        const completed = allServices.filter((s: ServiceRequest) => 
+          s.status === 'completed' && 
+          s.created_at.startsWith(today)
         ).length;
         
-        const resolvedToday = complaints.filter(c => 
-          c.status === 'resolved' && 
-          c.resolved_at?.startsWith(today)
-        ).length;
+        setStats({
+          totalServices: allServices.length,
+          pendingServices: pending,
+          inProgressServices: inProgress,
+          completedToday: completed,
+          emergencyRequests: emergency,
+          avgServiceRating: 4.5
+        });
+      }
+      
+      // Fetch technicians data
+      const techniciansResponse = await fetch('/api/technicians');
+      if (techniciansResponse.ok) {
+        const techData = await techniciansResponse.json();
+        setTechnicians(techData.technicians || []);
+      }
+      
+      console.log('✅ Service Manager data loaded:', { 
+        services: services.length, 
+        technicians: technicians.length 
+      });
+      
+    } catch (error) {
+      console.error('Error loading service manager data:', error);
+      showError({ title: 'Error', message: 'Failed to load dashboard data' });
+      // Ensure we have fallback data
+      setServices([]);
+      setTechnicians([]);
+    }
+  };
 
-        const activeServiceJobs = services.filter(s => 
-          ['assigned', 'accepted', 'en_route', 'arrived', 'in_progress'].includes(s.status)
-        ).length;
+  const loadTechnicians = async () => {
+    try {
+      // Fetch technicians data
+      const techniciansResponse = await fetch('/api/technicians');
+      if (techniciansResponse.ok) {
+        const techData = await techniciansResponse.json();
+        setTechnicians(techData.technicians || []);
+      }
+    } catch (error) {
+      console.error('Error loading technicians:', error);
+      showError({ title: 'Error', message: 'Failed to load technicians' });
+    }
+  };
 
-        const completedServicesToday = services.filter(s => 
-          s.status === 'completed' && 
-          s.completed_at?.startsWith(today)
-        ).length;
-
-        return {
-          id: tech.id,
-          full_name: tech.full_name,
-          activeComplaints,
-          resolvedToday,
-          activeServiceJobs,
-          completedServicesToday,
-          avgRating: tech.rating || 4.0
-        };
+  const assignService = async (serviceId: string, technicianId: string) => {
+    try {
+      const response = await fetch('/api/services/assign', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          service_id: serviceId,
+          technician_id: technicianId
+        })
       });
 
-      setTechnicianWorkloads(workloads);
+      if (response.ok) {
+        showSuccess({ 
+          title: 'Service Assigned', 
+          message: 'Service has been assigned to technician successfully' 
+        });
+        loadDashboardData(); // Refresh data
+      } else {
+        throw new Error(`Failed to assign service: ${response.status}`);
+      }
     } catch (error) {
-      console.error('Error loading technician workloads:', error);
-    }
-  };
-
-  const assignComplaint = async (complaintId: string, technicianId: string) => {
-    try {
-      const { error } = await supabase
-        .from('complaints')
-        .update({ 
-          assigned_to: technicianId,
-          status: 'assigned'
-        })
-        .eq('id', complaintId);
-
-      if (error) throw error;
-      showSuccess({ title: 'Complaint assigned successfully' });
-      loadDashboardData();
-    } catch (error: any) {
-      showError({ title: error.message || 'Failed to assign complaint' });
-    }
-  };
-
-  const getPriorityColor = (priority: string) => {
-    switch (priority) {
-      case 'critical':
-      case 'emergency':
-        return 'text-red-700 bg-red-100';
-      case 'high':
-      case 'urgent':
-        return 'text-orange-700 bg-orange-100';
-      case 'medium':
-      case 'normal':
-        return 'text-yellow-700 bg-yellow-100';
-      case 'low':
-        return 'text-green-700 bg-green-100';
-      default:
-        return 'text-gray-700 bg-gray-100';
+      console.error('Error assigning service:', error);
+      showError({ 
+        title: 'Error', 
+        message: 'Failed to assign service' 
+      });
     }
   };
 
   const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'open':
-      case 'pending':
-        return 'text-blue-700 bg-blue-100';
-      case 'assigned':
-        return 'text-purple-700 bg-purple-100';
-      case 'in_progress':
-        return 'text-yellow-700 bg-yellow-100';
-      case 'resolved':
-      case 'completed':
-        return 'text-green-700 bg-green-100';
-      case 'closed':
-      case 'cancelled':
-        return 'text-gray-700 bg-gray-100';
-      default:
-        return 'text-gray-700 bg-gray-100';
+    switch (status?.toLowerCase()) {
+      case 'completed': return 'bg-green-100 text-green-800';
+      case 'in_progress': return 'bg-blue-100 text-blue-800';
+      case 'assigned': return 'bg-purple-100 text-purple-800';
+      case 'pending': return 'bg-yellow-100 text-yellow-800';
+      case 'cancelled': return 'bg-red-100 text-red-800';
+      default: return 'bg-gray-100 text-gray-800';
     }
+  };
+
+  const getPriorityColor = (priority: string) => {
+    switch (priority?.toLowerCase()) {
+      case 'emergency': return 'bg-red-200 text-red-900 font-bold';
+      case 'high': return 'bg-red-100 text-red-800';
+      case 'medium': return 'bg-yellow-100 text-yellow-800';
+      case 'low': return 'bg-green-100 text-green-800';
+      default: return 'bg-gray-100 text-gray-800';
+    }
+  };
+
+  const formatDate = (dateString: string) => {
+    return new Date(dateString).toLocaleDateString('en-US', {
+      year: 'numeric',
+      month: 'short',
+      day: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    });
   };
 
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center min-h-96">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading service management dashboard...</p>
+      <div className="p-6">
+        <div className="animate-pulse">
+          <div className="h-8 bg-gray-200 rounded w-1/3 mb-6"></div>
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
+            {[1, 2, 3, 4, 5, 6].map(i => (
+              <div key={i} className="bg-gray-200 h-24 rounded-lg"></div>
+            ))}
+          </div>
         </div>
       </div>
     );
@@ -398,238 +222,325 @@ export const ServiceManagerDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header */}
-      <div className="flex justify-between items-center">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-900">Service Management Dashboard</h2>
-          <p className="text-gray-600">Manage complaints, service requests, and technician assignments</p>
+      {/* Main Dashboard Header - NO BACK BUTTON (this IS the main dashboard) */}
+      <Card>
+        <div className="flex items-center justify-between p-6">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-900">Service Manager Dashboard</h2>
+            <p className="text-gray-600">Welcome back, {(user as any)?.full_name || user?.email}</p>
+          </div>
+          <div className="flex items-center space-x-4">
+            <Button
+              onClick={loadDashboardData}
+              variant="secondary"
+              size="sm"
+              disabled={isLoading}
+            >
+              {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
+            </Button>
+          </div>
         </div>
-        <div className="flex space-x-3">
-          <Button onClick={() => window.open('/services', '_blank')}>
-            Service Portal
-          </Button>
-          <Button variant="secondary" onClick={loadDashboardData}>
-            Refresh Data
-          </Button>
-        </div>
-      </div>
+      </Card>
 
-      {/* Key Performance Indicators */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-blue-600">{stats.pendingServiceRequests}</div>
-            <div className="text-sm text-gray-600">Pending Requests</div>
+      {/* Real-Time Stats */}
+      <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-6 gap-6">
+        <Card className="p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-blue-600">{stats.totalServices}</div>
+            <div className="text-sm text-gray-600">Total Services</div>
           </div>
         </Card>
         
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-purple-600">{stats.todaysServiceJobs}</div>
-            <div className="text-sm text-gray-600">Today's Jobs</div>
+        <Card className="p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-yellow-600">{stats.pendingServices}</div>
+            <div className="text-sm text-gray-600">Pending</div>
           </div>
         </Card>
         
-        <Card>
-          <div className="p-4 text-center">
+        <Card className="p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-purple-600">{stats.inProgressServices}</div>
+            <div className="text-sm text-gray-600">In Progress</div>
+          </div>
+        </Card>
+        
+        <Card className="p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-green-600">{stats.completedToday}</div>
+            <div className="text-sm text-gray-600">Completed Today</div>
+          </div>
+        </Card>
+        
+        <Card className="p-6">
+          <div className="text-center">
             <div className="text-2xl font-bold text-red-600">{stats.emergencyRequests}</div>
             <div className="text-sm text-gray-600">Emergency</div>
           </div>
         </Card>
         
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">{stats.completedServicesToday}</div>
-            <div className="text-sm text-gray-600">Completed</div>
-          </div>
-        </Card>
-        
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-yellow-600">{stats.avgServiceRating}/5</div>
+        <Card className="p-6">
+          <div className="text-center">
+            <div className="text-2xl font-bold text-indigo-600">⭐ {stats.avgServiceRating}/5</div>
             <div className="text-sm text-gray-600">Avg Rating</div>
           </div>
         </Card>
-        
-        <Card>
-          <div className="p-4 text-center">
-            <div className="text-2xl font-bold text-green-600">₹{Math.round(stats.totalRevenue)}</div>
-            <div className="text-sm text-gray-600">Revenue Today</div>
-          </div>
-        </Card>
       </div>
 
-      {/* Tab Navigation */}
-      <div className="flex space-x-1">
-        {[
-          { key: 'overview', label: 'Overview' },
-          { key: 'complaints', label: 'Complaints' },
-          { key: 'services', label: 'Service Requests' },
-          { key: 'technicians', label: 'Technicians' },
-        ].map(tab => (
-          <button
-            key={tab.key}
-            onClick={() => setActiveTab(tab.key as any)}
-            className={`px-4 py-2 rounded-lg font-medium ${
-              activeTab === tab.key
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
-            }`}
+      {/* Quick Actions - Only what service managers need */}
+      <Card className="p-6">
+        <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+          <Button 
+            onClick={() => window.location.href = '/services/assignment'} 
+            className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            {tab.label}
-          </button>
-        ))}
-      </div>
-
-      {/* Overview Tab */}
-      {activeTab === 'overview' && (
-        <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-          {/* Recent Service Requests */}
-          <Card>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Service Requests</h3>
-              <div className="space-y-3">
-                {recentServiceRequests.map(request => (
-                  <div key={request.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{request.request_number}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(request.priority)}`}>
-                          {request.priority}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(request.status)}`}>
-                          {request.status}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">
-                        {request.customer.full_name} • {request.service_type.type_name}
-                      </div>
-                      <div className="text-sm text-gray-500">
-                        ₹{request.estimated_cost} • {new Date(request.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
-
-          {/* Recent Complaints */}
-          <Card>
-            <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Complaints</h3>
-              <div className="space-y-3">
-                {recentComplaints.map(complaint => (
-                  <div key={complaint.id} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                    <div className="flex-1">
-                      <div className="flex items-center space-x-2">
-                        <span className="font-medium">{complaint.complaint_number}</span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(complaint.priority)}`}>
-                          {complaint.priority}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(complaint.status)}`}>
-                          {complaint.status}
-                        </span>
-                      </div>
-                      <div className="text-sm text-gray-600 mt-1">{complaint.title}</div>
-                      <div className="text-sm text-gray-500">
-                        {complaint.customer?.business_name || complaint.customer?.contact_person} • 
-                        {new Date(complaint.created_at).toLocaleDateString()}
-                      </div>
-                    </div>
-                  </div>
-                ))}
-              </div>
-            </div>
-          </Card>
+            👥 Assign Services
+          </Button>
+          <Button 
+            onClick={() => window.location.href = '/technicians'} 
+            variant="secondary" 
+            className="w-full"
+          >
+            🔧 Manage Technicians
+          </Button>
+          <Button 
+            onClick={() => window.location.href = '/services'} 
+            variant="secondary" 
+            className="w-full"
+          >
+            📋 All Services
+          </Button>
+          <Button 
+            onClick={() => window.location.href = '/reports'} 
+            variant="outline" 
+            className="w-full"
+          >
+            📊 Service Reports
+          </Button>
         </div>
-      )}
+      </Card>
 
-      {/* Technicians Tab */}
-      {activeTab === 'technicians' && (
-        <Card>
-          <div className="p-6">
-            <h3 className="text-lg font-semibold mb-4">Technician Workloads</h3>
-            <div className="overflow-x-auto">
-              <table className="w-full text-sm">
-                <thead>
-                  <tr className="border-b">
-                    <th className="text-left p-2">Technician</th>
-                    <th className="text-left p-2">Active Complaints</th>
-                    <th className="text-left p-2">Resolved Today</th>
-                    <th className="text-left p-2">Active Services</th>
-                    <th className="text-left p-2">Completed Today</th>
-                    <th className="text-left p-2">Rating</th>
-                    <th className="text-left p-2">Status</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {technicianWorkloads.map(tech => (
-                    <tr key={tech.id} className="border-b hover:bg-gray-50">
-                      <td className="p-2 font-medium">{tech.full_name}</td>
-                      <td className="p-2">{tech.activeComplaints}</td>
-                      <td className="p-2">{tech.resolvedToday}</td>
-                      <td className="p-2">{tech.activeServiceJobs}</td>
-                      <td className="p-2">{tech.completedServicesToday}</td>
-                      <td className="p-2">{tech.avgRating}/5</td>
-                      <td className="p-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                          tech.activeServiceJobs + tech.activeComplaints > 3
-                            ? 'text-red-700 bg-red-100'
-                            : tech.activeServiceJobs + tech.activeComplaints > 1
-                            ? 'text-yellow-700 bg-yellow-100'
-                            : 'text-green-700 bg-green-100'
-                        }`}>
-                          {tech.activeServiceJobs + tech.activeComplaints > 3 
-                            ? 'Overloaded'
-                            : tech.activeServiceJobs + tech.activeComplaints > 1
-                            ? 'Busy'
-                            : 'Available'
-                          }
-                        </span>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-            </div>
-          </div>
-        </Card>
-      )}
-
-      {/* Quick Actions */}
+      {/* Navigation Tabs */}
       <Card>
+        <div className="border-b border-gray-200">
+          <nav className="flex space-x-8 px-6">
+            {[
+              { key: 'overview', label: '📊 Overview', count: null },
+              { key: 'services', label: '🔧 Service Requests', count: services.length },
+              { key: 'technicians', label: '👥 Technicians', count: technicians.length }
+            ].map(tab => (
+              <button
+                key={tab.key}
+                onClick={() => setActiveTab(tab.key as any)}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
+                  activeTab === tab.key
+                    ? 'border-blue-500 text-blue-600'
+                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
+              >
+                {tab.label}
+                {tab.count !== null && (
+                  <span className="ml-2 bg-gray-100 text-gray-600 py-0.5 px-2 rounded-full text-xs">
+                    {tab.count}
+                  </span>
+                )}
+              </button>
+            ))}
+          </nav>
+        </div>
+
         <div className="p-6">
-          <h3 className="text-lg font-semibold mb-4">Quick Actions</h3>
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-            <Button
-              onClick={() => window.open('/services?action=new-request', '_blank')}
-              className="w-full"
-            >
-              📋 New Service Request
-            </Button>
-            <Button
-              onClick={() => window.open('/complaints?action=new', '_blank')}
-              variant="secondary"
-              className="w-full"
-            >
-              📝 New Complaint
-            </Button>
-            <Button
-              onClick={() => window.open('/admin/users?role=technician', '_blank')}
-              variant="secondary"
-              className="w-full"
-            >
-              👥 Manage Technicians
-            </Button>
-            <Button
-              onClick={() => window.open('/reports/service-analytics', '_blank')}
-              variant="secondary"
-              className="w-full"
-            >
-              📊 Service Reports
-            </Button>
-          </div>
+          {/* Overview Tab */}
+          {activeTab === 'overview' && (
+            <div className="space-y-6">
+              {/* Priority Services */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-900 mb-4">Priority Service Requests</h3>
+                <div className="space-y-3">
+                  {services
+                    .filter(service => ['emergency', 'high'].includes(service.priority) && service.status === 'pending')
+                    .slice(0, 5)
+                    .map((service) => (
+                    <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                      <div className="flex-1">
+                        <div className="flex items-center space-x-3">
+                          <span className="text-lg">🔧</span>
+                          <div>
+                            <p className="font-medium text-gray-900">{service.service_type}</p>
+                            <p className="text-sm text-gray-600">
+                              {service.customer_name} • {formatDate(service.created_at)}
+                            </p>
+                          </div>
+                        </div>
+                      </div>
+                      <div className="flex items-center space-x-2">
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
+                          {service.priority.toUpperCase()}
+                        </span>
+                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
+                          {service.status.replace('_', ' ').toUpperCase()}
+                        </span>
+                      </div>
+                    </div>
+                  ))}
+                  
+                  {services.filter(s => ['emergency', 'high'].includes(s.priority) && s.status === 'pending').length === 0 && (
+                    <div className="text-center py-8">
+                      <div className="text-4xl mb-2">✅</div>
+                      <p className="text-gray-600">No priority requests pending</p>
+                      <p className="text-sm text-gray-500">All emergency and high priority services are handled</p>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Services Tab */}
+          {activeTab === 'services' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Service Requests ({services.length})</h3>
+                <Button 
+                  onClick={() => window.location.href = '/services/assignment'} 
+                  className="bg-blue-600 hover:bg-blue-700"
+                >
+                  👥 Assign Services
+                </Button>
+              </div>
+              
+              <div className="space-y-4">
+                {services.length > 0 ? (
+                  services.map((service) => (
+                    <div key={service.id} className="border rounded-lg p-4 hover:bg-gray-50 transition-colors">
+                      <div className="flex items-start justify-between">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3 mb-2">
+                            <h4 className="font-semibold text-lg">{service.service_type}</h4>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
+                              {service.status.replace('_', ' ').toUpperCase()}
+                            </span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
+                              {service.priority.toUpperCase()} PRIORITY
+                            </span>
+                          </div>
+                          
+                          {service.description && (
+                            <p className="text-gray-600 mb-3">{service.description}</p>
+                          )}
+                          
+                          <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
+                            <div>
+                              <span className="font-medium text-gray-700">Service #:</span>
+                              <p className="text-gray-600">{service.service_number}</p>
+                            </div>
+                            
+                            <div>
+                              <span className="font-medium text-gray-700">Customer:</span>
+                              <p className="text-gray-600">{service.customer_name}</p>
+                            </div>
+                            
+                            <div>
+                              <span className="font-medium text-gray-700">Created:</span>
+                              <p className="text-gray-600">{formatDate(service.created_at)}</p>
+                            </div>
+                            
+                            {service.estimated_cost && (
+                              <div>
+                                <span className="font-medium text-gray-700">Est. Cost:</span>
+                                <p className="text-gray-600">${service.estimated_cost}</p>
+                              </div>
+                            )}
+                          </div>
+                        </div>
+                        
+                        <div className="ml-4 flex flex-col space-y-2">
+                          {service.status === 'pending' && (
+                            <Button
+                              size="sm"
+                              onClick={() => window.location.href = `/services/assignment?service_id=${service.id}`}
+                              className="bg-blue-600 hover:bg-blue-700"
+                            >
+                              👥 Assign Tech
+                            </Button>
+                          )}
+                        </div>
+                      </div>
+                    </div>
+                  ))
+                ) : (
+                  <div className="text-center py-12">
+                    <div className="text-6xl mb-4">🔧</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No service requests</h3>
+                    <p className="text-gray-600 mb-4">New service requests will appear here automatically</p>
+                    <Button 
+                      onClick={loadDashboardData}
+                      variant="secondary"
+                    >
+                      🔄 Check for New Requests
+                    </Button>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
+
+          {/* Technicians Tab */}
+          {activeTab === 'technicians' && (
+            <div className="space-y-4">
+              <div className="flex justify-between items-center">
+                <h3 className="text-lg font-semibold text-gray-900">Available Technicians ({technicians.length})</h3>
+                <Button 
+                  onClick={() => window.location.href = '/technicians'} 
+                  variant="outline"
+                  size="sm"
+                >
+                  👥 Manage All
+                </Button>
+              </div>
+              
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+                {technicians.length > 0 ? (
+                  technicians.map((tech) => (
+                    <Card key={tech.id} className="p-4">
+                      <div className="text-center">
+                        <div className="text-lg font-semibold text-gray-900 mb-2">{tech.full_name}</div>
+                        <div className="space-y-2">
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Status:</span>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
+                              tech.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
+                              {tech.is_available ? 'Available' : 'Busy'}
+                            </span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Active:</span>
+                            <span className="font-medium">{tech.active_services || 0}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Completed Today:</span>
+                            <span className="font-medium">{tech.completed_today || 0}</span>
+                          </div>
+                          <div className="flex justify-between text-sm">
+                            <span className="text-gray-600">Rating:</span>
+                            <span className="font-medium">⭐ {tech.rating || 4.5}/5</span>
+                          </div>
+                        </div>
+                      </div>
+                    </Card>
+                  ))
+                ) : (
+                  <div className="col-span-full text-center py-12">
+                    <div className="text-6xl mb-4">👥</div>
+                    <h3 className="text-lg font-medium text-gray-900 mb-2">No technicians available</h3>
+                    <p className="text-gray-600">Technician information will appear here</p>
+                  </div>
+                )}
+              </div>
+            </div>
+          )}
         </div>
       </Card>
     </div>

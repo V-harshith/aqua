@@ -49,94 +49,32 @@ export const NotificationCenter: React.FC = () => {
   }, [user]);
   const loadNotifications = async () => {
     if (!user) return;
+    
     setIsLoading(true);
     try {
-      // Load user-specific notifications and role-based notifications
       const { data, error } = await supabase
         .from('notifications')
         .select('*')
         .or(`recipient_id.eq.${user.id},recipient_role.eq.${user.role}`)
         .order('created_at', { ascending: false })
         .limit(50);
-      if (error && error.code !== 'PGRST116') {
-        console.error('Error loading notifications:', error);
-              // No notifications table found
+
+      if (error && error.code === '42P01') {
+        // No notifications table found
+        setNotifications([]);
+        setStats({ total: 0, unread: 0, byType: {}, byPriority: {} });
+        return;
+      }
+      setNotifications(data || []);
+      setStats(calculateStats(data || []));
+    } catch (error) {
+      console.error('Error loading notifications:', error);
       setNotifications([]);
       setStats({ total: 0, unread: 0, byType: {}, byPriority: {} });
-      return;
-    }
-    setNotifications(data || []);
-    setStats(calculateStats(data || []));
-  } catch (error) {
-    console.error('Error loading notifications:', error);
-    setNotifications([]);
-    setStats({ total: 0, unread: 0, byType: {}, byPriority: {} });
-  } finally {
+    } finally {
       setIsLoading(false);
     }
   };
-  const getMockNotifications = (): Notification[] => [
-    {
-      id: '1',
-      title: 'New High Priority Complaint',
-      message: 'Complaint #2024-001 has been submitted with urgent priority in Central District',
-      type: 'complaint',
-      priority: 'urgent',
-      recipient_role: 'service_manager',
-      is_read: false,
-      action_url: '/complaints',
-      created_at: new Date(Date.now() - 30000).toISOString(),
-      metadata: { complaint_id: '2024-001', area: 'Central District' }
-    },
-    {
-      id: '2',
-      title: 'Service Assignment Completed',
-      message: 'Technician Rajesh Kumar has completed service request #SR-001',
-      type: 'service',
-      priority: 'medium',
-      recipient_role: 'service_manager',
-      is_read: false,
-      action_url: '/services',
-      created_at: new Date(Date.now() - 300000).toISOString(),
-      metadata: { service_id: 'SR-001', technician: 'Rajesh Kumar' }
-    },
-    {
-      id: '3',
-      title: 'Water Distribution Started',
-      message: 'Driver Suresh Patel has started water distribution for North Zone route',
-      type: 'distribution',
-      priority: 'medium',
-      recipient_role: 'driver_manager',
-      is_read: true,
-      action_url: '/distribution',
-      created_at: new Date(Date.now() - 900000).toISOString(),
-      metadata: { route: 'North Zone', driver: 'Suresh Patel' }
-    },
-    {
-      id: '4',
-      title: 'System Maintenance Alert',
-      message: 'Scheduled system maintenance will begin at 2:00 AM tonight',
-      type: 'warning',
-      priority: 'high',
-      recipient_role: 'admin',
-      is_read: false,
-      created_at: new Date(Date.now() - 3600000).toISOString(),
-      expires_at: new Date(Date.now() + 86400000).toISOString(),
-      metadata: { maintenance_type: 'scheduled', duration: '2 hours' }
-    },
-    {
-      id: '5',
-      title: 'Monthly Report Generated',
-      message: 'Your monthly operational report is ready for review',
-      type: 'info',
-      priority: 'low',
-      recipient_id: user?.id,
-      is_read: true,
-      action_url: '/reports',
-      created_at: new Date(Date.now() - 7200000).toISOString(),
-      metadata: { report_type: 'monthly', period: 'January 2024' }
-    }
-  ];
   const setupRealtimeSubscription = useCallback(() => {
     if (!user || isSubscribed) return;
     const channel = supabase

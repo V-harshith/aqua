@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import Button from '../ui/Button';
@@ -7,7 +6,6 @@ import Input from '../ui/Input';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
-
 interface ServiceType {
   id: string;
   type_code: string;
@@ -18,7 +16,6 @@ interface ServiceType {
   base_price: number;
   is_emergency: boolean;
 }
-
 interface CustomerProduct {
   id: string;
   serial_number: string;
@@ -29,7 +26,6 @@ interface CustomerProduct {
   };
   installation_address: string;
 }
-
 interface ServiceRequestData {
   customer_product_id: string;
   service_type_id: string;
@@ -41,11 +37,9 @@ interface ServiceRequestData {
   problem_description: string;
   customer_notes: string;
 }
-
 export const ServiceRequestForm: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
   const showToast = (message: string, type: 'success' | 'error') => {
     if (type === 'success') {
       showSuccess({ title: message });
@@ -53,14 +47,12 @@ export const ServiceRequestForm: React.FC = () => {
       showError({ title: message });
     }
   };
-
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [customerProducts, setCustomerProducts] = useState<CustomerProduct[]>([]);
   const [selectedServiceType, setSelectedServiceType] = useState<ServiceType | null>(null);
   const [selectedProduct, setSelectedProduct] = useState<CustomerProduct | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isEmergency, setIsEmergency] = useState(false);
-
   const [formData, setFormData] = useState<ServiceRequestData>({
     customer_product_id: '',
     service_type_id: '',
@@ -72,7 +64,6 @@ export const ServiceRequestForm: React.FC = () => {
     problem_description: '',
     customer_notes: '',
   });
-
   const priorityOptions = [
     { value: 'low', label: 'Low Priority', description: 'Can wait a few days' },
     { value: 'normal', label: 'Normal Priority', description: 'Within 1-2 days' },
@@ -80,18 +71,15 @@ export const ServiceRequestForm: React.FC = () => {
     { value: 'urgent', label: 'Urgent', description: 'Same day service needed' },
     { value: 'emergency', label: 'Emergency', description: 'Immediate assistance required' },
   ];
-
   const timeSlots = [
     { value: 'morning', label: 'Morning (9 AM - 12 PM)' },
     { value: 'afternoon', label: 'Afternoon (12 PM - 5 PM)' },
     { value: 'evening', label: 'Evening (5 PM - 8 PM)' },
     { value: 'anytime', label: 'Anytime (Flexible)' },
   ];
-
   useEffect(() => {
     loadInitialData();
   }, []);
-
   useEffect(() => {
     if (formData.priority === 'emergency') {
       setIsEmergency(true);
@@ -99,7 +87,6 @@ export const ServiceRequestForm: React.FC = () => {
       setIsEmergency(false);
     }
   }, [formData.priority]);
-
   const loadInitialData = async () => {
     try {
       // Load service types
@@ -108,10 +95,8 @@ export const ServiceRequestForm: React.FC = () => {
         .select('*')
         .eq('status', 'active')
         .order('category', { ascending: true });
-
       if (serviceTypesError) throw serviceTypesError;
       setServiceTypes(serviceTypesData || []);
-
       // Load customer's products
       const { data: productsData, error: productsError } = await supabase
         .from('customer_products')
@@ -127,16 +112,12 @@ export const ServiceRequestForm: React.FC = () => {
         `)
         .eq('customer_id', user?.id)
         .eq('status', 'active');
-
       if (productsError) throw productsError;
-      
       const formattedProducts = productsData?.map(item => ({
         ...item,
         product: Array.isArray(item.product) ? item.product[0] : item.product,
       })) || [];
-
       setCustomerProducts(formattedProducts);
-
       // Pre-fill contact phone if available
       if (user?.phone) {
         setFormData(prev => ({ ...prev, contact_phone: user.phone || '' }));
@@ -146,7 +127,6 @@ export const ServiceRequestForm: React.FC = () => {
       showToast(error.message || 'Failed to load data', 'error');
     }
   };
-
   const handleServiceTypeChange = (serviceTypeId: string) => {
     const serviceType = serviceTypes.find(st => st.id === serviceTypeId);
     setSelectedServiceType(serviceType || null);
@@ -156,7 +136,6 @@ export const ServiceRequestForm: React.FC = () => {
       priority: serviceType?.is_emergency ? 'emergency' : 'normal'
     }));
   };
-
   const handleProductChange = (productId: string) => {
     const product = customerProducts.find(p => p.id === productId);
     setSelectedProduct(product || null);
@@ -166,36 +145,29 @@ export const ServiceRequestForm: React.FC = () => {
       customer_address: product?.installation_address || ''
     }));
   };
-
   const generateRequestNumber = () => {
     const timestamp = Date.now().toString(36);
     const random = Math.random().toString(36).substring(2, 8);
     return `SR-${timestamp}-${random}`.toUpperCase();
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.service_type_id || !formData.problem_description) {
       showToast('Please fill all required fields', 'error');
       return;
     }
-
     if (!formData.customer_address || !formData.contact_phone) {
       showToast('Address and contact phone are required', 'error');
       return;
     }
-
     setIsLoading(true);
     try {
       const requestNumber = generateRequestNumber();
-      
       // Set minimum date for emergency requests
       let preferredDate = formData.preferred_date;
       if (formData.priority === 'emergency' && !preferredDate) {
         preferredDate = new Date().toISOString().split('T')[0];
       }
-
       const serviceRequestData = {
         request_number: requestNumber,
         customer_id: user?.id,
@@ -212,17 +184,13 @@ export const ServiceRequestForm: React.FC = () => {
         status: 'pending',
         estimated_cost: selectedServiceType?.base_price || 0,
       };
-
       const { data, error } = await supabase
         .from('service_requests')
         .insert([serviceRequestData])
         .select()
         .single();
-
       if (error) throw error;
-
       showToast(`Service request ${requestNumber} submitted successfully!`, 'success');
-      
       // Reset form
       setFormData({
         customer_product_id: '',
@@ -237,12 +205,10 @@ export const ServiceRequestForm: React.FC = () => {
       });
       setSelectedServiceType(null);
       setSelectedProduct(null);
-
       // For emergency requests, show additional information
       if (formData.priority === 'emergency') {
         showToast('Emergency request submitted! Our team will contact you within 15 minutes.', 'success');
       }
-
     } catch (error: any) {
       console.error('Error submitting service request:', error);
       showToast(error.message || 'Failed to submit service request', 'error');
@@ -250,7 +216,6 @@ export const ServiceRequestForm: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="max-w-4xl mx-auto p-4">
       <Card>
@@ -259,7 +224,6 @@ export const ServiceRequestForm: React.FC = () => {
             <h2 className="text-2xl font-bold text-gray-900">Request Service</h2>
             <p className="text-gray-600">Submit a service request for your water system</p>
           </div>
-
           {isEmergency && (
             <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
               <div className="flex items-center">
@@ -276,7 +240,6 @@ export const ServiceRequestForm: React.FC = () => {
               </div>
             </div>
           )}
-
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Service Type Selection */}
             <div>
@@ -310,7 +273,6 @@ export const ServiceRequestForm: React.FC = () => {
                 ))}
               </select>
             </div>
-
             {/* Service Type Details */}
             {selectedServiceType && (
               <div className="bg-blue-50 p-4 rounded-lg">
@@ -322,7 +284,6 @@ export const ServiceRequestForm: React.FC = () => {
                 </div>
               </div>
             )}
-
             {/* Product Selection (Optional) */}
             {customerProducts.length > 0 && (
               <div>
@@ -344,7 +305,6 @@ export const ServiceRequestForm: React.FC = () => {
                 </select>
               </div>
             )}
-
             {/* Priority Level */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -374,7 +334,6 @@ export const ServiceRequestForm: React.FC = () => {
                 ))}
               </div>
             </div>
-
             {/* Scheduling (not for emergency) */}
             {!isEmergency && (
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -389,7 +348,6 @@ export const ServiceRequestForm: React.FC = () => {
                     min={new Date().toISOString().split('T')[0]}
                   />
                 </div>
-
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
                     Preferred Time
@@ -408,7 +366,6 @@ export const ServiceRequestForm: React.FC = () => {
                 </div>
               </div>
             )}
-
             {/* Contact Information */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -424,7 +381,6 @@ export const ServiceRequestForm: React.FC = () => {
                 />
               </div>
             </div>
-
             {/* Service Address */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -439,7 +395,6 @@ export const ServiceRequestForm: React.FC = () => {
                 required
               />
             </div>
-
             {/* Problem Description */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -454,7 +409,6 @@ export const ServiceRequestForm: React.FC = () => {
                 required
               />
             </div>
-
             {/* Additional Notes */}
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -468,7 +422,6 @@ export const ServiceRequestForm: React.FC = () => {
                 placeholder="Any additional information, special instructions, or access details"
               />
             </div>
-
             {/* Submit Button */}
             <div className="flex justify-end space-x-4">
               <Button

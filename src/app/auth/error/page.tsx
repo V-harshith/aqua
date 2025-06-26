@@ -54,7 +54,7 @@ function AuthErrorContent() {
             <p className="text-gray-600">{errorInfo.description}</p>
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <div className="space-y-4">
             {errorInfo.action === 'signin' && (
@@ -71,7 +71,7 @@ function AuthErrorContent() {
                 </Link>
               </>
             )}
-            
+
             <div className="text-center">
               <Link href="/" className="text-sm text-blue-600 hover:underline">
                 Return to Home

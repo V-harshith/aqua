@@ -1,7 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 import * as XLSX from 'xlsx';
-
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -12,18 +11,13 @@ const supabaseAdmin = createClient(
     }
   }
 );
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'users';
     const format = searchParams.get('format') || 'csv';
-
-    console.log(`📤 Exporting real ${type} data in ${format} format from Supabase`);
-
     let exportData: any[] | Record<string, any> = [];
     let filename = '';
-
     switch (type) {
       case 'users':
         const usersResponse = await supabaseAdmin.from('users').select('*');
@@ -31,7 +25,6 @@ export async function GET(request: NextRequest) {
         exportData = usersResponse.data || [];
         filename = `users_export_${new Date().toISOString().split('T')[0]}`;
         break;
-        
       case 'customers':
         const customersResponse = await supabaseAdmin.from('customers').select(`
           *,
@@ -41,7 +34,6 @@ export async function GET(request: NextRequest) {
         exportData = customersResponse.data || [];
         filename = `customers_export_${new Date().toISOString().split('T')[0]}`;
         break;
-        
       case 'complaints':
         const complaintsResponse = await supabaseAdmin.from('complaints').select(`
           *,
@@ -52,7 +44,6 @@ export async function GET(request: NextRequest) {
         exportData = complaintsResponse.data || [];
         filename = `complaints_export_${new Date().toISOString().split('T')[0]}`;
         break;
-        
       case 'services':
         const servicesResponse = await supabaseAdmin.from('services').select(`
           *,
@@ -63,7 +54,6 @@ export async function GET(request: NextRequest) {
         exportData = servicesResponse.data || [];
         filename = `services_export_${new Date().toISOString().split('T')[0]}`;
         break;
-        
       case 'all_data':
         // For comprehensive export, create an object structure
         const [users, customers, complaints, services] = await Promise.all([
@@ -72,13 +62,11 @@ export async function GET(request: NextRequest) {
           supabaseAdmin.from('complaints').select('*'),
           supabaseAdmin.from('services').select('*')
         ]);
-        
         // Check for errors in parallel requests
         if (users.error) throw new Error(`Users data error: ${users.error.message}`);
         if (customers.error) throw new Error(`Customers data error: ${customers.error.message}`);
         if (complaints.error) throw new Error(`Complaints data error: ${complaints.error.message}`);
         if (services.error) throw new Error(`Services data error: ${services.error.message}`);
-        
         const allDataExport = {
           users: users.data || [],
           customers: customers.data || [],
@@ -93,17 +81,13 @@ export async function GET(request: NextRequest) {
         exportData = allDataExport;
         filename = `complete_export_${new Date().toISOString().split('T')[0]}`;
         break;
-        
       default:
         return NextResponse.json({ error: 'Invalid export type' }, { status: 400 });
     }
-
     console.log(`✅ Exported ${Array.isArray(exportData) ? exportData.length : 'comprehensive'} real records for ${type}`);
-
     // Generate file based on format
     if (format === 'csv') {
       let csvContent = '';
-      
       if (type === 'all_data' && !Array.isArray(exportData)) {
         // For all_data, create a summary CSV
         csvContent = 'Data Type,Record Count,Sample Data\n';
@@ -129,7 +113,6 @@ export async function GET(request: NextRequest) {
           });
         }
       }
-      
       return new NextResponse(csvContent, {
         status: 200,
         headers: {
@@ -139,7 +122,6 @@ export async function GET(request: NextRequest) {
         },
       });
     }
-    
     if (format === 'json') {
       return NextResponse.json(exportData, {
         status: 200,
@@ -149,10 +131,8 @@ export async function GET(request: NextRequest) {
         },
       });
     }
-
     if (format === 'excel') {
       let workbook: XLSX.WorkBook | undefined;
-      
       if (type === 'all_data' && !Array.isArray(exportData)) {
         // For all_data, create multiple sheets
         workbook = XLSX.utils.book_new();
@@ -168,10 +148,8 @@ export async function GET(request: NextRequest) {
         const worksheet = XLSX.utils.json_to_sheet(exportData);
         XLSX.utils.book_append_sheet(workbook, worksheet, type);
       }
-      
       if (workbook) {
         const buffer = XLSX.write(workbook, { type: 'buffer', bookType: 'xlsx' });
-        
         return new NextResponse(buffer, {
           status: 200,
           headers: {
@@ -182,9 +160,7 @@ export async function GET(request: NextRequest) {
         });
       }
     }
-
     return NextResponse.json({ error: 'Invalid format' }, { status: 400 });
-    
   } catch (error: any) {
     console.error('❌ Export error:', error);
     return NextResponse.json(

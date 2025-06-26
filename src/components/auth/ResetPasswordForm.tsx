@@ -1,29 +1,24 @@
 'use client';
-
 import { useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import Link from 'next/link';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Card, CardHeader, CardContent, CardFooter } from '@/components/ui/Card';
-
 export default function ResetPasswordForm() {
   const [email, setEmail] = useState('');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState<string | null>(null);
   const { resetPassword } = useAuthContext();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setMessage(null);
     setLoading(true);
-
     try {
       const { error } = await resetPassword(email);
       if (error) throw error;
-      
       setMessage('Password reset link sent to your email!');
     } catch (error: any) {
       setError(error.message || 'Failed to send reset password email');
@@ -31,7 +26,6 @@ export default function ResetPasswordForm() {
       setLoading(false);
     }
   };
-
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -40,7 +34,6 @@ export default function ResetPasswordForm() {
           <p className="text-sm text-gray-500 mt-2">Enter your email to receive a password reset link</p>
         </div>
       </CardHeader>
-      
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           {error && (
@@ -48,13 +41,11 @@ export default function ResetPasswordForm() {
               {error}
             </div>
           )}
-
           {message && (
             <div className="p-3 bg-green-100 border border-green-200 text-green-700 rounded">
               {message}
             </div>
           )}
-
           <Input
             label="Email"
             id="email"
@@ -63,7 +54,6 @@ export default function ResetPasswordForm() {
             onChange={(e) => setEmail(e.target.value)}
             required
           />
-
           <Button
             type="submit"
             variant="primary"
@@ -74,7 +64,6 @@ export default function ResetPasswordForm() {
           </Button>
         </form>
       </CardContent>
-      
       <CardFooter>
         <div className="text-center text-sm w-full">
           Remember your password?{' '}

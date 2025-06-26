@@ -1,11 +1,9 @@
 'use client';
-
 import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-
 interface Notification {
   id: string;
   title: string;
@@ -20,14 +18,12 @@ interface Notification {
   created_at: string;
   expires_at?: string;
 }
-
 interface NotificationStats {
   total: number;
   unread: number;
   byType: Record<string, number>;
   byPriority: Record<string, number>;
 }
-
 export const NotificationCenter: React.FC = () => {
   const { user } = useAuth();
   const [notifications, setNotifications] = useState<Notification[]>([]);
@@ -40,7 +36,6 @@ export const NotificationCenter: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [filter, setFilter] = useState<'all' | 'unread' | 'high_priority'>('all');
   const [isSubscribed, setIsSubscribed] = useState(false);
-
   useEffect(() => {
     if (user) {
       loadNotifications();
@@ -52,10 +47,8 @@ export const NotificationCenter: React.FC = () => {
       }
     };
   }, [user]);
-
   const loadNotifications = async () => {
     if (!user) return;
-
     setIsLoading(true);
     try {
       // Load user-specific notifications and role-based notifications
@@ -65,27 +58,23 @@ export const NotificationCenter: React.FC = () => {
         .or(`recipient_id.eq.${user.id},recipient_role.eq.${user.role}`)
         .order('created_at', { ascending: false })
         .limit(50);
-
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading notifications:', error);
-        // Create mock notifications if table doesn't exist
-        setNotifications(getMockNotifications());
-        setStats(calculateStats(getMockNotifications()));
-        return;
-      }
-
-      const notificationData = data || getMockNotifications();
-      setNotifications(notificationData);
-      setStats(calculateStats(notificationData));
-    } catch (error) {
-      console.error('Error loading notifications:', error);
-      setNotifications(getMockNotifications());
-      setStats(calculateStats(getMockNotifications()));
-    } finally {
+              // No notifications table found
+      setNotifications([]);
+      setStats({ total: 0, unread: 0, byType: {}, byPriority: {} });
+      return;
+    }
+    setNotifications(data || []);
+    setStats(calculateStats(data || []));
+  } catch (error) {
+    console.error('Error loading notifications:', error);
+    setNotifications([]);
+    setStats({ total: 0, unread: 0, byType: {}, byPriority: {} });
+  } finally {
       setIsLoading(false);
     }
   };
-
   const getMockNotifications = (): Notification[] => [
     {
       id: '1',
@@ -148,10 +137,8 @@ export const NotificationCenter: React.FC = () => {
       metadata: { report_type: 'monthly', period: 'January 2024' }
     }
   ];
-
   const setupRealtimeSubscription = useCallback(() => {
     if (!user || isSubscribed) return;
-
     const channel = supabase
       .channel('notifications')
       .on(
@@ -170,7 +157,6 @@ export const NotificationCenter: React.FC = () => {
             total: prev.total + 1,
             unread: prev.unread + (newNotification.is_read ? 0 : 1)
           }));
-          
           // Show browser notification if supported
           if ('Notification' in window && Notification.permission === 'granted') {
             new Notification(newNotification.title, {
@@ -196,15 +182,12 @@ export const NotificationCenter: React.FC = () => {
         }
       )
       .subscribe();
-
     setIsSubscribed(true);
-
     // Request notification permission
     if ('Notification' in window && Notification.permission === 'default') {
       Notification.requestPermission();
     }
   }, [user, isSubscribed]);
-
   const calculateStats = (notifications: Notification[]): NotificationStats => {
     const stats = {
       total: notifications.length,
@@ -212,27 +195,22 @@ export const NotificationCenter: React.FC = () => {
       byType: {} as Record<string, number>,
       byPriority: {} as Record<string, number>
     };
-
     notifications.forEach(notification => {
       stats.byType[notification.type] = (stats.byType[notification.type] || 0) + 1;
       stats.byPriority[notification.priority] = (stats.byPriority[notification.priority] || 0) + 1;
     });
-
     return stats;
   };
-
   const markAsRead = async (notificationId: string) => {
     try {
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .eq('id', notificationId);
-
       if (error) {
         console.error('Error marking notification as read:', error);
         // Update local state even if DB update fails
       }
-
       setNotifications(prev =>
         prev.map(n => n.id === notificationId ? { ...n, is_read: true } : n)
       );
@@ -241,38 +219,31 @@ export const NotificationCenter: React.FC = () => {
       console.error('Error marking notification as read:', error);
     }
   };
-
   const markAllAsRead = async () => {
     try {
       const unreadIds = notifications.filter(n => !n.is_read).map(n => n.id);
-      
       const { error } = await supabase
         .from('notifications')
         .update({ is_read: true })
         .in('id', unreadIds);
-
       if (error) {
         console.error('Error marking all notifications as read:', error);
       }
-
       setNotifications(prev => prev.map(n => ({ ...n, is_read: true })));
       setStats(prev => ({ ...prev, unread: 0 }));
     } catch (error) {
       console.error('Error marking all notifications as read:', error);
     }
   };
-
   const deleteNotification = async (notificationId: string) => {
     try {
       const { error } = await supabase
         .from('notifications')
         .delete()
         .eq('id', notificationId);
-
       if (error) {
         console.error('Error deleting notification:', error);
       }
-
       setNotifications(prev => prev.filter(n => n.id !== notificationId));
       setStats(prev => {
         const notification = notifications.find(n => n.id === notificationId);
@@ -286,7 +257,6 @@ export const NotificationCenter: React.FC = () => {
       console.error('Error deleting notification:', error);
     }
   };
-
   const getFilteredNotifications = () => {
     switch (filter) {
       case 'unread':
@@ -297,7 +267,6 @@ export const NotificationCenter: React.FC = () => {
         return notifications;
     }
   };
-
   const getNotificationIcon = (type: string) => {
     switch (type) {
       case 'complaint': return '🔧';
@@ -310,7 +279,6 @@ export const NotificationCenter: React.FC = () => {
       default: return '📢';
     }
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'urgent': return 'bg-red-100 text-red-800 border-red-200';
@@ -320,27 +288,22 @@ export const NotificationCenter: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800 border-gray-200';
     }
   };
-
   const getTimeAgo = (timestamp: string) => {
     const now = new Date();
     const time = new Date(timestamp);
     const diffInMinutes = Math.floor((now.getTime() - time.getTime()) / (1000 * 60));
-
     if (diffInMinutes < 1) return 'Just now';
     if (diffInMinutes < 60) return `${diffInMinutes}m ago`;
     if (diffInMinutes < 1440) return `${Math.floor(diffInMinutes / 60)}h ago`;
     return `${Math.floor(diffInMinutes / 1440)}d ago`;
   };
-
   const filteredNotifications = getFilteredNotifications();
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Notification Center</h1>
         <p className="text-gray-600 mt-1">Stay updated with real-time system notifications</p>
       </div>
-
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -354,7 +317,6 @@ export const NotificationCenter: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -366,7 +328,6 @@ export const NotificationCenter: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -380,7 +341,6 @@ export const NotificationCenter: React.FC = () => {
             </div>
           </CardContent>
         </Card>
-
         <Card>
           <CardContent className="p-4">
             <div className="flex items-center justify-between">
@@ -397,7 +357,6 @@ export const NotificationCenter: React.FC = () => {
           </CardContent>
         </Card>
       </div>
-
       {/* Controls */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 mb-6">
         <div className="flex gap-2">
@@ -415,7 +374,6 @@ export const NotificationCenter: React.FC = () => {
             </button>
           ))}
         </div>
-
         <div className="flex gap-2">
           <Button onClick={markAllAsRead} variant="secondary" size="sm">
             Mark All Read
@@ -425,7 +383,6 @@ export const NotificationCenter: React.FC = () => {
           </Button>
         </div>
       </div>
-
       {/* Notifications List */}
       <div className="space-y-4">
         {isLoading ? (
@@ -457,7 +414,6 @@ export const NotificationCenter: React.FC = () => {
                 <div className="flex items-start justify-between">
                   <div className="flex items-start space-x-4 flex-1">
                     <div className="text-2xl">{getNotificationIcon(notification.type)}</div>
-                    
                     <div className="flex-1">
                       <div className="flex items-center gap-2 mb-1">
                         <h3 className={`font-semibold ${notification.is_read ? 'text-gray-700' : 'text-gray-900'}`}>
@@ -467,11 +423,9 @@ export const NotificationCenter: React.FC = () => {
                           <span className="w-2 h-2 bg-blue-600 rounded-full"></span>
                         )}
                       </div>
-                      
                       <p className={`text-sm mb-2 ${notification.is_read ? 'text-gray-500' : 'text-gray-700'}`}>
                         {notification.message}
                       </p>
-                      
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>{getTimeAgo(notification.created_at)}</span>
                         <span className={`px-2 py-1 rounded-full font-medium ${getPriorityColor(notification.priority)}`}>
@@ -481,7 +435,6 @@ export const NotificationCenter: React.FC = () => {
                       </div>
                     </div>
                   </div>
-
                   <div className="flex flex-col gap-2">
                     {!notification.is_read && (
                       <button
@@ -491,7 +444,6 @@ export const NotificationCenter: React.FC = () => {
                         Mark Read
                       </button>
                     )}
-                    
                     {notification.action_url && (
                       <button
                         onClick={() => window.location.href = notification.action_url!}
@@ -500,7 +452,6 @@ export const NotificationCenter: React.FC = () => {
                         View
                       </button>
                     )}
-                    
                     <button
                       onClick={() => deleteNotification(notification.id)}
                       className="px-3 py-1 text-xs bg-red-100 text-red-700 rounded-md hover:bg-red-200 transition-colors"
@@ -514,7 +465,6 @@ export const NotificationCenter: React.FC = () => {
           ))
         )}
       </div>
-
       {/* Real-time Status */}
       <div className="mt-8 p-4 bg-green-50 rounded-lg border border-green-200">
         <div className="flex items-center justify-between">

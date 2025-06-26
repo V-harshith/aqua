@@ -94,7 +94,7 @@ export const ProductManagerDashboard: React.FC = () => {
     try {
       const response = await fetch('/api/dashboard/overview?type=product_manager');
       const result = await response.json();
-      
+
       if (result.success) {
         setStats(result.data.stats);
       }
@@ -108,7 +108,7 @@ export const ProductManagerDashboard: React.FC = () => {
     try {
       const response = await fetch('/api/inventory');
       const result = await response.json();
-      
+
       if (result.success) {
         setProducts(result.products || []);
       }
@@ -122,7 +122,7 @@ export const ProductManagerDashboard: React.FC = () => {
     try {
       const response = await fetch('/api/inventory?action=alerts');
       const result = await response.json();
-      
+
       if (result.success) {
         setStockAlerts(result.alerts || []);
       }
@@ -176,7 +176,7 @@ export const ProductManagerDashboard: React.FC = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         showSuccess({ title: result.message || 'Product restocked successfully' });
         loadDashboardData();
@@ -203,7 +203,7 @@ export const ProductManagerDashboard: React.FC = () => {
       });
 
       const result = await response.json();
-      
+
       if (result.success) {
         showSuccess({ title: result.message || 'Stock adjusted successfully' });
         loadDashboardData();

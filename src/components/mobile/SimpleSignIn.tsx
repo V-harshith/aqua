@@ -1,23 +1,19 @@
 "use client";
-
 import React, { useState } from 'react';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import Button from '../ui/Button';
-
 export const SimpleSignIn: React.FC = () => {
   const [phone, setPhone] = useState('');
   const [password, setPassword] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const { signIn } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-
   const handleSignIn = async () => {
     if (!phone || !password) {
       showError({ title: 'कृपया फोन नंबर और पासवर्ड डालें / Please enter phone and password' });
       return;
     }
-
     setIsLoading(true);
     try {
       // Convert phone to email format for existing auth system
@@ -30,7 +26,6 @@ export const SimpleSignIn: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-500 to-indigo-600 flex items-center justify-center p-4">
       <div className="w-full max-w-md">
@@ -44,14 +39,12 @@ export const SimpleSignIn: React.FC = () => {
             Project Aqua Water Management
           </p>
         </div>
-
         {/* Sign In Form */}
         <div className="bg-white rounded-3xl shadow-2xl p-8">
           <h2 className="text-2xl font-bold text-center text-gray-800 mb-8">
             <span className="block text-xl text-gray-600 mb-2">लॉगिन करें</span>
             Sign In
           </h2>
-
           <div className="space-y-6">
             {/* Phone Input */}
             <div>
@@ -68,7 +61,6 @@ export const SimpleSignIn: React.FC = () => {
                 autoComplete="tel"
               />
             </div>
-
             {/* Password Input */}
             <div>
               <label className="block text-lg font-medium text-gray-700 mb-3">
@@ -84,7 +76,6 @@ export const SimpleSignIn: React.FC = () => {
                 autoComplete="current-password"
               />
             </div>
-
             {/* Sign In Button */}
             <Button
               onClick={handleSignIn}
@@ -102,7 +93,6 @@ export const SimpleSignIn: React.FC = () => {
                 </span>
               )}
             </Button>
-
             {/* Help Section */}
             <div className="text-center pt-6">
               <p className="text-gray-600 mb-4">
@@ -125,7 +115,6 @@ export const SimpleSignIn: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Quick Login Shortcuts */}
         <div className="mt-8 bg-white/20 rounded-2xl p-6 backdrop-blur-sm">
           <p className="text-white text-center mb-4 font-medium">
@@ -152,7 +141,6 @@ export const SimpleSignIn: React.FC = () => {
             </button>
           </div>
         </div>
-
         {/* Version Info */}
         <div className="text-center mt-6 text-white/70 text-sm">
           प्रोजेक्ट अक्वा v1.0 | Made with ❤️ for India

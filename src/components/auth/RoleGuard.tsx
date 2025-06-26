@@ -1,9 +1,7 @@
 'use client';
-
 import { ReactNode } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { UserRole } from '@/lib/supabase';
-
 interface RoleGuardProps {
   children: ReactNode;
   allowedRoles?: UserRole[];
@@ -12,7 +10,6 @@ interface RoleGuardProps {
   fallback?: ReactNode;
   showUnauthorized?: boolean;
 }
-
 export function RoleGuard({
   children,
   allowedRoles,
@@ -22,7 +19,6 @@ export function RoleGuard({
   showUnauthorized = false
 }: RoleGuardProps) {
   const { userProfile, loading } = useAuthContext();
-
   // Show loading state
   if (loading) {
     return (
@@ -31,7 +27,6 @@ export function RoleGuard({
       </div>
     );
   }
-
   // Check if user is authenticated
   if (!userProfile) {
     return showUnauthorized ? (
@@ -40,7 +35,6 @@ export function RoleGuard({
       </div>
     ) : fallback;
   }
-
   // Check specific role requirement
   if (requiredRole && userProfile.role !== requiredRole) {
     return showUnauthorized ? (
@@ -49,13 +43,11 @@ export function RoleGuard({
       </div>
     ) : fallback;
   }
-
   // Check allowed roles
   if (allowedRoles && allowedRoles.length > 0) {
     const hasPermission = requireAny 
       ? allowedRoles.includes(userProfile.role)
       : allowedRoles.every(role => role === userProfile.role);
-
     if (!hasPermission) {
       return showUnauthorized ? (
         <div className="text-center p-4 text-red-500">
@@ -64,11 +56,9 @@ export function RoleGuard({
       ) : fallback;
     }
   }
-
   // User has permission, render children
   return <>{children}</>;
 }
-
 // Specific role guards for common use cases
 export function AdminGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   return (
@@ -77,7 +67,6 @@ export function AdminGuard({ children, fallback }: { children: ReactNode; fallba
     </RoleGuard>
   );
 }
-
 export function ManagerGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   return (
     <RoleGuard 
@@ -88,7 +77,6 @@ export function ManagerGuard({ children, fallback }: { children: ReactNode; fall
     </RoleGuard>
   );
 }
-
 export function TechnicianGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   return (
     <RoleGuard 
@@ -99,7 +87,6 @@ export function TechnicianGuard({ children, fallback }: { children: ReactNode; f
     </RoleGuard>
   );
 }
-
 export function CustomerGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   return (
     <RoleGuard requiredRole="customer" fallback={fallback}>
@@ -107,7 +94,6 @@ export function CustomerGuard({ children, fallback }: { children: ReactNode; fal
     </RoleGuard>
   );
 }
-
 export function StaffGuard({ children, fallback }: { children: ReactNode; fallback?: ReactNode }) {
   return (
     <RoleGuard 
@@ -118,11 +104,9 @@ export function StaffGuard({ children, fallback }: { children: ReactNode; fallba
     </RoleGuard>
   );
 }
-
 // Role-based navigation helpers
 export function useRolePermissions() {
   const { userProfile } = useAuthContext();
-
   if (!userProfile) {
     return {
       canViewAdmin: false,
@@ -138,9 +122,7 @@ export function useRolePermissions() {
       isStaff: false
     };
   }
-
   const role = userProfile.role;
-
   return {
     canViewAdmin: role === 'admin',
     canManageUsers: ['admin', 'dept_head'].includes(role),

@@ -1,12 +1,10 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
-
 interface DashboardStats {
   activeProducts: number;
   pendingServiceRequests: number;
@@ -14,7 +12,6 @@ interface DashboardStats {
   upcomingServices: number;
   totalSpent: number;
 }
-
 interface RecentActivity {
   id: string;
   type: 'service' | 'complaint' | 'product';
@@ -23,7 +20,6 @@ interface RecentActivity {
   date: string;
   amount?: number;
 }
-
 interface QuickAction {
   id: string;
   title: string;
@@ -32,11 +28,9 @@ interface QuickAction {
   action: () => void;
   urgent?: boolean;
 }
-
 export const SimpleDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
   const [stats, setStats] = useState<DashboardStats>({
     activeProducts: 0,
     pendingServiceRequests: 0,
@@ -44,11 +38,9 @@ export const SimpleDashboard: React.FC = () => {
     upcomingServices: 0,
     totalSpent: 0,
   });
-  
   const [recentActivity, setRecentActivity] = useState<RecentActivity[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
-
   const quickActions: QuickAction[] = [
     {
       id: 'emergency',
@@ -94,13 +86,11 @@ export const SimpleDashboard: React.FC = () => {
       action: () => window.open('tel:1800-AQUA-911', '_self')
     }
   ];
-
   useEffect(() => {
     if (user) {
       loadDashboardData();
     }
   }, [user]);
-
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
@@ -115,7 +105,6 @@ export const SimpleDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const loadStats = async () => {
     try {
       // Get customer products
@@ -124,25 +113,19 @@ export const SimpleDashboard: React.FC = () => {
         .select('id')
         .eq('customer_id', user?.id)
         .eq('status', 'active');
-
       if (productsError) throw productsError;
-
       // Get service requests
       const { data: serviceRequests, error: serviceError } = await supabase
         .from('service_requests')
         .select('status, estimated_cost, actual_cost')
         .eq('customer_id', user?.id);
-
       if (serviceError) throw serviceError;
-
       // Get complaints
       const { data: complaints, error: complaintsError } = await supabase
         .from('complaints')
         .select('status')
         .eq('customer_id', user?.id);
-
       if (complaintsError) throw complaintsError;
-
       // Get upcoming services
       const today = new Date().toISOString().split('T')[0];
       const { data: upcomingServices, error: upcomingError } = await supabase
@@ -155,14 +138,11 @@ export const SimpleDashboard: React.FC = () => {
         .eq('service_request.customer_id', user?.id)
         .gte('scheduled_date', today)
         .in('status', ['assigned', 'accepted', 'en_route']);
-
       if (upcomingError) throw upcomingError;
-
       // Calculate stats
       const pendingServiceRequests = serviceRequests.filter(s => s.status === 'pending').length;
       const openComplaints = complaints.filter(c => ['open', 'assigned', 'in_progress'].includes(c.status)).length;
       const totalSpent = serviceRequests.reduce((sum, s) => sum + (s.actual_cost || s.estimated_cost || 0), 0);
-
       setStats({
         activeProducts: products.length,
         pendingServiceRequests,
@@ -174,11 +154,9 @@ export const SimpleDashboard: React.FC = () => {
       console.error('Error loading stats:', error);
     }
   };
-
   const loadRecentActivity = async () => {
     try {
       const activities: RecentActivity[] = [];
-
       // Get recent service requests
       const { data: services, error: serviceError } = await supabase
         .from('service_requests')
@@ -192,7 +170,6 @@ export const SimpleDashboard: React.FC = () => {
         .eq('customer_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(3);
-
       if (!serviceError && services) {
         services.forEach(service => {
           activities.push({
@@ -205,7 +182,6 @@ export const SimpleDashboard: React.FC = () => {
           });
         });
       }
-
       // Get recent complaints
       const { data: complaints, error: complaintsError } = await supabase
         .from('complaints')
@@ -219,7 +195,6 @@ export const SimpleDashboard: React.FC = () => {
         .eq('customer_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(3);
-
       if (!complaintsError && complaints) {
         complaints.forEach(complaint => {
           activities.push({
@@ -231,7 +206,6 @@ export const SimpleDashboard: React.FC = () => {
           });
         });
       }
-
       // Get recent products
       const { data: products, error: productsError } = await supabase
         .from('customer_products')
@@ -245,7 +219,6 @@ export const SimpleDashboard: React.FC = () => {
         .eq('customer_id', user?.id)
         .order('created_at', { ascending: false })
         .limit(2);
-
       if (!productsError && products) {
         products.forEach(product => {
           activities.push({
@@ -257,26 +230,21 @@ export const SimpleDashboard: React.FC = () => {
           });
         });
       }
-
       // Sort by date and take most recent 5
       activities.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
       setRecentActivity(activities.slice(0, 5));
-
     } catch (error) {
       console.error('Error loading recent activity:', error);
     }
   };
-
   const handleEmergencyCall = () => {
     window.open('tel:1800-AQUA-911', '_self');
     setShowEmergencyModal(false);
   };
-
   const handleEmergencyRequest = () => {
     window.open('/services?priority=emergency', '_blank');
     setShowEmergencyModal(false);
   };
-
   const getStatusColor = (status: string) => {
     switch (status.toLowerCase()) {
       case 'active':
@@ -293,7 +261,6 @@ export const SimpleDashboard: React.FC = () => {
         return 'text-gray-700 bg-gray-100';
     }
   };
-
   const getActivityIcon = (type: string) => {
     switch (type) {
       case 'service': return '🔧';
@@ -302,7 +269,6 @@ export const SimpleDashboard: React.FC = () => {
       default: return '📄';
     }
   };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-96">
@@ -313,7 +279,6 @@ export const SimpleDashboard: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50 pb-20">
       {/* Header */}
@@ -329,7 +294,6 @@ export const SimpleDashboard: React.FC = () => {
           </div>
         </div>
       </div>
-
       {/* Quick Stats */}
       <div className="p-4">
         <div className="grid grid-cols-2 gap-3 mb-6">
@@ -339,21 +303,18 @@ export const SimpleDashboard: React.FC = () => {
               <div className="text-sm text-gray-600">Active Products</div>
             </div>
           </Card>
-          
           <Card>
             <div className="p-4 text-center">
               <div className="text-2xl font-bold text-purple-600">{stats.pendingServiceRequests}</div>
               <div className="text-sm text-gray-600">Pending Services</div>
             </div>
           </Card>
-          
           <Card>
             <div className="p-4 text-center">
               <div className="text-2xl font-bold text-orange-600">{stats.openComplaints}</div>
               <div className="text-sm text-gray-600">Open Issues</div>
             </div>
           </Card>
-          
           <Card>
             <div className="p-4 text-center">
               <div className="text-2xl font-bold text-green-600">{stats.upcomingServices}</div>
@@ -361,7 +322,6 @@ export const SimpleDashboard: React.FC = () => {
             </div>
           </Card>
         </div>
-
         {/* Emergency Alert */}
         {stats.openComplaints > 0 && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
@@ -381,7 +341,6 @@ export const SimpleDashboard: React.FC = () => {
             </div>
           </div>
         )}
-
         {/* Quick Actions */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-3">Quick Actions</h2>
@@ -413,7 +372,6 @@ export const SimpleDashboard: React.FC = () => {
             ))}
           </div>
         </div>
-
         {/* Recent Activity */}
         <div className="mb-6">
           <h2 className="text-lg font-semibold mb-3">Recent Activity</h2>
@@ -455,7 +413,6 @@ export const SimpleDashboard: React.FC = () => {
             )}
           </div>
         </div>
-
         {/* Service Information */}
         <Card>
           <div className="p-4">
@@ -474,7 +431,6 @@ export const SimpleDashboard: React.FC = () => {
                   📞 Call
                 </Button>
               </div>
-              
               <div className="flex items-center justify-between">
                 <div>
                   <div className="font-medium text-sm">WhatsApp Support</div>
@@ -492,7 +448,6 @@ export const SimpleDashboard: React.FC = () => {
           </div>
         </Card>
       </div>
-
       {/* Emergency Modal */}
       {showEmergencyModal && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
@@ -502,7 +457,6 @@ export const SimpleDashboard: React.FC = () => {
               <h3 className="text-xl font-bold text-red-900 mt-2">Emergency Support</h3>
               <p className="text-red-700 text-sm mt-1">How can we help you right now?</p>
             </div>
-            
             <div className="space-y-3">
               <Button
                 onClick={handleEmergencyCall}
@@ -511,7 +465,6 @@ export const SimpleDashboard: React.FC = () => {
                 📞 Call Emergency Hotline
                 <div className="text-xs text-red-100">1800-AQUA-911</div>
               </Button>
-              
               <Button
                 onClick={handleEmergencyRequest}
                 variant="secondary"
@@ -520,7 +473,6 @@ export const SimpleDashboard: React.FC = () => {
                 📝 Submit Emergency Request
                 <div className="text-xs text-gray-500">Online emergency form</div>
               </Button>
-              
               <Button
                 onClick={() => setShowEmergencyModal(false)}
                 variant="secondary"

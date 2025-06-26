@@ -1,12 +1,10 @@
 'use client';
-
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { useToast } from '@/hooks/useToast';
 import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { RoleGuard } from '@/components/auth/RoleGuard';
-
 interface Bill {
   id: string;
   bill_number: string;
@@ -16,17 +14,14 @@ interface Bill {
   billing_period: string;
   water_usage: number;
 }
-
 export default function BillingPage() {
   const { user } = useAuthContext();
   const { success } = useToast();
   const [bills, setBills] = useState<Bill[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     loadBills();
   }, []);
-
   const loadBills = async () => {
     try {
       // Mock billing data for demo
@@ -59,7 +54,6 @@ export default function BillingPage() {
           water_usage: 1320
         }
       ];
-      
       setBills(mockBills);
     } catch (err) {
       console.error('Error loading bills:', err);
@@ -67,7 +61,6 @@ export default function BillingPage() {
       setIsLoading(false);
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'paid': return 'bg-green-100 text-green-800';
@@ -76,9 +69,7 @@ export default function BillingPage() {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
   const totalPending = bills.filter(b => b.status === 'pending').reduce((sum, b) => sum + b.amount, 0);
-
   if (isLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -89,7 +80,6 @@ export default function BillingPage() {
       </div>
     );
   }
-
   return (
     <RoleGuard allowedRoles={['customer', 'admin', 'accounts_manager']}>
       <div className="min-h-screen bg-gray-50 py-8">
@@ -98,7 +88,6 @@ export default function BillingPage() {
             <h1 className="text-3xl font-bold text-gray-900">Billing & Payments</h1>
             <p className="text-gray-600">Manage your water service bills and payments</p>
           </div>
-
           {/* Billing Summary */}
           <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
             <Card>
@@ -109,7 +98,6 @@ export default function BillingPage() {
                 <div className="text-sm text-gray-600 mt-1">Outstanding Balance</div>
               </div>
             </Card>
-            
             <Card>
               <div className="p-6 text-center">
                 <div className="text-3xl font-bold text-blue-600">
@@ -118,7 +106,6 @@ export default function BillingPage() {
                 <div className="text-sm text-gray-600 mt-1">Next Due Date</div>
               </div>
             </Card>
-            
             <Card>
               <div className="p-6 text-center">
                 <div className="text-3xl font-bold text-green-600">
@@ -128,7 +115,6 @@ export default function BillingPage() {
               </div>
             </Card>
           </div>
-
           {/* Bills Table */}
           <Card title="Billing History">
             <div className="overflow-x-auto">
@@ -182,7 +168,6 @@ export default function BillingPage() {
               </table>
             </div>
           </Card>
-
           {/* Payment Methods */}
           <Card title="Payment Methods" className="mt-6">
             <div className="text-center py-8">

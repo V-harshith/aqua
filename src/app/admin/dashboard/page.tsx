@@ -1,8 +1,6 @@
 'use client';
-
 import { EnhancedAdminDashboard } from '@/components/dashboard/EnhancedAdminDashboard';
 import { RoleGuard } from '@/components/auth/RoleGuard';
-
 export default function AdminDashboardPage() {
   return (
     <RoleGuard allowedRoles={['admin', 'dept_head']}>

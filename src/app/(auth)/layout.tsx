@@ -1,10 +1,8 @@
 import { Metadata } from 'next';
-
 export const metadata: Metadata = {
   title: 'Authentication',
   description: 'Authentication pages for Project Aqua',
 };
-
 export default function AuthLayout({
   children,
 }: {

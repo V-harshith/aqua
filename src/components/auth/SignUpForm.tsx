@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
@@ -9,7 +8,6 @@ import Input from '@/components/ui/Input';
 import { useAuthContext } from '@/context/AuthContext';
 import { useToastContext } from '@/context/ToastContext';
 import { supabase, UserRole } from '@/lib/supabase';
-
 export default function SignUpForm() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,11 +22,9 @@ export default function SignUpForm() {
   const { signUp } = useAuthContext();
   const { success, error: showError, info } = useToastContext();
   const router = useRouter();
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-
     // Validate required fields
     if (!firstName.trim() || !lastName.trim()) {
       showError({
@@ -38,7 +34,6 @@ export default function SignUpForm() {
       setLoading(false);
       return;
     }
-
     // Validate passwords match
     if (password !== confirmPassword) {
       showError({
@@ -48,7 +43,6 @@ export default function SignUpForm() {
       setLoading(false);
       return;
     }
-
     // Validate password strength
     if (password.length < 6) {
       showError({
@@ -58,13 +52,11 @@ export default function SignUpForm() {
       setLoading(false);
       return;
     }
-
     try {
       info({
         title: 'Creating Account',
         message: 'Please wait while we set up your account...'
       });
-
       // Create Supabase auth user with metadata
       // The database trigger will automatically create the user profile
       const { data: authData, error: authError } = await supabase.auth.signUp({
@@ -80,9 +72,7 @@ export default function SignUpForm() {
           }
         }
       });
-
       if (authError) throw authError;
-
       if (authData.user) {
         if (authData.user.email_confirmed_at) {
           success({
@@ -105,7 +95,6 @@ export default function SignUpForm() {
             duration: 8000
           });
         }
-        
         // Clear form
         setEmail('');
         setPassword('');
@@ -119,7 +108,6 @@ export default function SignUpForm() {
       }
     } catch (error: any) {
       console.error('Signup error:', error);
-      
       // Handle specific error types
       if (error.message.includes('email')) {
         showError({
@@ -144,7 +132,6 @@ export default function SignUpForm() {
       setLoading(false);
     }
   };
-
   return (
     <Card className="w-full max-w-md mx-auto">
       <CardHeader>
@@ -153,7 +140,6 @@ export default function SignUpForm() {
           <p className="text-sm text-gray-500 mt-2">Join Project Aqua - Water Management System</p>
         </div>
       </CardHeader>
-      
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-4">
           <div className="grid grid-cols-2 gap-4">
@@ -174,7 +160,6 @@ export default function SignUpForm() {
               required
             />
           </div>
-
           <Input
             label="Email"
             id="email"
@@ -183,7 +168,6 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmail(e.target.value)}
             required
           />
-
           <Input
             label="Phone Number"
             id="phone"
@@ -192,7 +176,6 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPhone(e.target.value)}
             placeholder="Optional"
           />
-
           <Input
             label="Address"
             id="address"
@@ -201,7 +184,6 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setAddress(e.target.value)}
             placeholder="Your address (optional)"
           />
-
           <Input
             label="Employee ID (if applicable)"
             id="employeeId"
@@ -210,7 +192,6 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setEmployeeId(e.target.value)}
             placeholder="Leave blank if you're a customer"
           />
-
           <Input
             label="Department (if applicable)"
             id="department"
@@ -219,7 +200,6 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setDepartment(e.target.value)}
             placeholder="Leave blank if you're a customer"
           />
-
           <Input
             label="Password"
             id="password"
@@ -228,7 +208,6 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setPassword(e.target.value)}
             required
           />
-
           <Input
             label="Confirm Password"
             id="confirmPassword"
@@ -237,12 +216,10 @@ export default function SignUpForm() {
             onChange={(e: React.ChangeEvent<HTMLInputElement>) => setConfirmPassword(e.target.value)}
             required
           />
-
           <div className="text-sm text-gray-600 bg-blue-50 p-3 rounded-md">
             <p className="font-medium">Note:</p>
             <p>New accounts are created with customer access by default. Contact your administrator to request employee role assignments for internal staff.</p>
           </div>
-
           <Button
             type="submit"
             variant="primary"
@@ -253,7 +230,6 @@ export default function SignUpForm() {
           </Button>
         </form>
       </CardContent>
-      
       <CardFooter>
         <div className="text-center text-sm w-full">
           Already have an account?{' '}

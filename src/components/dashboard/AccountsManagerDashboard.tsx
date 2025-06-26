@@ -76,7 +76,7 @@ export const AccountsManagerDashboard: React.FC = () => {
     try {
       const today = new Date().toISOString().split('T')[0];
       const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-      
+
       // Mock financial data - in real implementation, this would come from invoices/payments tables
       const mockStats = {
         totalRevenue: 125000,

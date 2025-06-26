@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -11,16 +10,13 @@ const supabaseAdmin = createClient(
     }
   }
 );
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const dashboardType = searchParams.get('type') || 'admin';
     const userId = searchParams.get('userId');
-
     let stats = {};
     let activities = [];
-
     switch (dashboardType) {
       case 'admin':
         stats = await getAdminStats();
@@ -52,7 +48,6 @@ export async function GET(request: NextRequest) {
       default:
         return NextResponse.json({ error: 'Invalid dashboard type' }, { status: 400 });
     }
-
     return NextResponse.json({
       success: true,
       data: {
@@ -61,7 +56,6 @@ export async function GET(request: NextRequest) {
         lastUpdated: new Date().toISOString()
       }
     });
-
   } catch (error) {
     console.error('Dashboard API error:', error);
     return NextResponse.json({ 
@@ -69,7 +63,6 @@ export async function GET(request: NextRequest) {
     }, { status: 500 });
   }
 }
-
 async function getAdminStats() {
   const [
     totalUsers,
@@ -80,7 +73,6 @@ async function getAdminStats() {
     supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).eq('is_active', true),
     supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }).in('status', ['open', 'assigned'])
   ]);
-
   return {
     totalUsers: totalUsers.count || 0,
     activeUsers: activeUsers.count || 0,
@@ -88,7 +80,6 @@ async function getAdminStats() {
     monthlyRevenue: 125000
   };
 }
-
 async function getProductManagerStats() {
   return {
     totalProducts: 45,
@@ -97,7 +88,6 @@ async function getProductManagerStats() {
     outOfStockProducts: 3
   };
 }
-
 async function getServiceManagerStats() {
   const [
     totalComplaints,
@@ -106,7 +96,6 @@ async function getServiceManagerStats() {
     supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }),
     supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }).eq('status', 'open')
   ]);
-
   return {
     totalComplaints: totalComplaints.count || 0,
     openComplaints: openComplaints.count || 0,
@@ -114,7 +103,6 @@ async function getServiceManagerStats() {
     completedToday: 8
   };
 }
-
 async function getTechnicianStats(userId: string) {
   return {
     assignedJobs: 5,
@@ -123,7 +111,6 @@ async function getTechnicianStats(userId: string) {
     avgRating: 4.5
   };
 }
-
 async function getCustomerStats(userId: string) {
   return {
     activeProducts: 3,
@@ -132,7 +119,6 @@ async function getCustomerStats(userId: string) {
     totalSpent: 25000
   };
 }
-
 async function getDriverStats(userId: string) {
   return {
     totalDistributions: 45,
@@ -141,14 +127,12 @@ async function getDriverStats(userId: string) {
     efficiency: 95
   };
 }
-
 async function getAdminActivities() {
   const { data } = await supabaseAdmin
     .from('complaints')
     .select('id, complaint_number, title, status, created_at')
     .order('created_at', { ascending: false })
     .limit(5);
-  
   return data?.map(item => ({
     id: item.id,
     type: 'complaint',
@@ -157,7 +141,6 @@ async function getAdminActivities() {
     status: item.status
   })) || [];
 }
-
 async function getProductActivities() {
   return [{
     id: '1',
@@ -167,14 +150,12 @@ async function getProductActivities() {
     status: 'active'
   }];
 }
-
 async function getServiceActivities() {
   const { data } = await supabaseAdmin
     .from('service_requests')
     .select('id, request_number, status, created_at')
     .order('created_at', { ascending: false })
     .limit(5);
-  
   return data?.map(item => ({
     id: item.id,
     type: 'service',
@@ -183,7 +164,6 @@ async function getServiceActivities() {
     status: item.status
   })) || [];
 }
-
 async function getTechnicianActivities(userId: string) {
   return [{
     id: '1',
@@ -193,7 +173,6 @@ async function getTechnicianActivities(userId: string) {
     status: 'completed'
   }];
 }
-
 async function getCustomerActivities(userId: string) {
   return [{
     id: '1',
@@ -203,7 +182,6 @@ async function getCustomerActivities(userId: string) {
     status: 'pending'
   }];
 }
-
 async function getDriverActivities(userId: string) {
   return [{
     id: '1',

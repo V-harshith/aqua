@@ -1,14 +1,11 @@
 'use client';
-
 import { InputHTMLAttributes, forwardRef } from 'react';
-
 interface InputProps extends InputHTMLAttributes<HTMLInputElement> {
   label?: string;
   helperText?: string;
   error?: string;
   fullWidth?: boolean;
 }
-
 const Input = forwardRef<HTMLInputElement, InputProps>((
   {
     label,
@@ -21,7 +18,6 @@ const Input = forwardRef<HTMLInputElement, InputProps>((
   }, ref) => {
   // Generate a unique ID if one isn't provided
   const inputId = id || `input-${Math.random().toString(36).substring(2, 9)}`;
-  
   return (
     <div className={`${fullWidth ? 'w-full' : ''} ${className}`}>
       {label && (
@@ -65,7 +61,5 @@ const Input = forwardRef<HTMLInputElement, InputProps>((
     </div>
   );
 });
-
 Input.displayName = 'Input';
-
 export default Input;

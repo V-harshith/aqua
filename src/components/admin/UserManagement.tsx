@@ -1,5 +1,4 @@
 "use client";
-
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
@@ -8,7 +7,6 @@ import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { getAllUsers, updateUser, toggleUserStatus } from '@/lib/userService';
-
 interface User {
   id: string;
   email: string;
@@ -20,7 +18,6 @@ interface User {
   is_active: boolean;
   created_at: string;
 }
-
 export default function UserManagement() {
   const { userProfile } = useAuthContext();
   const [users, setUsers] = useState<User[]>([]);
@@ -29,7 +26,6 @@ export default function UserManagement() {
   const [editingUser, setEditingUser] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [roleFilter, setRoleFilter] = useState<UserRole | 'all'>('all');
-
   const roleOptions: { value: UserRole; label: string }[] = [
     { value: 'admin', label: 'Administrator' },
     { value: 'dept_head', label: 'Department Head' },
@@ -40,18 +36,14 @@ export default function UserManagement() {
     { value: 'technician', label: 'Technician' },
     { value: 'customer', label: 'Customer' },
   ];
-
   useEffect(() => {
     fetchUsers();
   }, []);
-
   const fetchUsers = async () => {
     try {
       setLoading(true);
       setError(null);
-
       const result = await getAllUsers();
-      
       if (result.success && result.users) {
         setUsers(result.users);
       } else {
@@ -64,16 +56,13 @@ export default function UserManagement() {
       setLoading(false);
     }
   };
-
   const updateUserRole = async (userId: string, newRole: UserRole, department?: string) => {
     try {
       const updates: any = { role: newRole };
       if (department !== undefined) {
         updates.department = department.trim() || null;
       }
-
       const result = await updateUser(userId, updates);
-      
       if (result.success && result.user) {
         // Update local state
         setUsers(users.map(user => 
@@ -90,11 +79,9 @@ export default function UserManagement() {
       alert('Failed to update user role: ' + error.message);
     }
   };
-
   const toggleUserStatusHandler = async (userId: string) => {
     try {
       const result = await toggleUserStatus(userId);
-      
       if (result.success && result.user) {
         // Update local state
         setUsers(users.map(user => 
@@ -108,17 +95,13 @@ export default function UserManagement() {
       alert('Failed to toggle user status: ' + error.message);
     }
   };
-
   const filteredUsers = users.filter(user => {
     const matchesSearch = user.full_name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          user.email.toLowerCase().includes(searchTerm.toLowerCase()) ||
                          (user.employee_id && user.employee_id.toLowerCase().includes(searchTerm.toLowerCase()));
-    
     const matchesRole = roleFilter === 'all' || user.role === roleFilter;
-    
     return matchesSearch && matchesRole;
   });
-
   const getRoleColor = (role: UserRole) => {
     switch (role) {
       case 'admin': return 'text-red-600 bg-red-100';
@@ -132,7 +115,6 @@ export default function UserManagement() {
       default: return 'text-gray-600 bg-gray-100';
     }
   };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -140,7 +122,6 @@ export default function UserManagement() {
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
@@ -148,7 +129,6 @@ export default function UserManagement() {
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -161,7 +141,6 @@ export default function UserManagement() {
           Refresh
         </Button>
       </div>
-
       {/* Filters */}
       <div className="flex flex-col sm:flex-row gap-4">
         <div className="flex-1">
@@ -193,7 +172,6 @@ export default function UserManagement() {
           </select>
         </div>
       </div>
-
       {/* Users List */}
       {filteredUsers.length === 0 ? (
         <Card>
@@ -228,7 +206,6 @@ export default function UserManagement() {
                         </span>
                       )}
                     </div>
-                    
                     <div className="space-y-1 text-sm text-gray-600">
                       <p><span className="font-medium">Email:</span> {user.email}</p>
                       {user.phone && <p><span className="font-medium">Phone:</span> {user.phone}</p>}
@@ -237,7 +214,6 @@ export default function UserManagement() {
                       <p><span className="font-medium">Joined:</span> {new Date(user.created_at).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  
                   <div className="flex gap-2">
                     {user.id !== userProfile?.id && (
                       <>
@@ -248,7 +224,6 @@ export default function UserManagement() {
                         >
                           {editingUser === user.id ? 'Cancel' : 'Edit Role'}
                         </Button>
-                        
                         <Button
                           onClick={() => toggleUserStatusHandler(user.id)}
                           variant={user.is_active ? "secondary" : "primary"}
@@ -260,7 +235,6 @@ export default function UserManagement() {
                     )}
                   </div>
                 </div>
-
                 {/* Edit Role Form */}
                 {editingUser === user.id && (
                   <div className="mt-4 pt-4 border-t">
@@ -280,7 +254,6 @@ export default function UserManagement() {
     </div>
   );
 }
-
 // Role Edit Form Component
 interface RoleEditFormProps {
   user: User;
@@ -288,17 +261,13 @@ interface RoleEditFormProps {
   onSave: (role: UserRole, department?: string) => void;
   onCancel: () => void;
 }
-
 function RoleEditForm({ user, roleOptions, onSave, onCancel }: RoleEditFormProps) {
   const [selectedRole, setSelectedRole] = useState<UserRole>(user.role);
   const [department, setDepartment] = useState(user.department || '');
-
   const handleSave = () => {
     onSave(selectedRole, department);
   };
-
   const requiresDepartment = ['technician', 'service_manager', 'driver_manager', 'accounts_manager', 'product_manager', 'dept_head', 'admin'].includes(selectedRole);
-
   return (
     <div className="space-y-4">
       <div>
@@ -318,7 +287,6 @@ function RoleEditForm({ user, roleOptions, onSave, onCancel }: RoleEditFormProps
           ))}
         </select>
       </div>
-
       {requiresDepartment && (
         <div>
           <label htmlFor="department" className="block text-sm font-medium text-gray-700 mb-2">
@@ -334,7 +302,6 @@ function RoleEditForm({ user, roleOptions, onSave, onCancel }: RoleEditFormProps
           />
         </div>
       )}
-
       <div className="flex gap-2">
         <Button onClick={handleSave} variant="primary" size="sm">
           Save Changes

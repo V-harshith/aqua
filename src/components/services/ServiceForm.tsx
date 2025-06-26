@@ -1,5 +1,4 @@
 "use client";
-
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
@@ -7,7 +6,6 @@ import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
-
 type ServiceType = 
   | 'installation'
   | 'maintenance'
@@ -18,34 +16,29 @@ type ServiceType =
   | 'disconnection'
   | 'emergency'
   | 'other';
-
 interface Customer {
   id: string;
   customer_code: string;
   contact_person: string;
   billing_address: string;
 }
-
 interface ServiceFormProps {
   onSubmitSuccess?: () => void;
   onCancel?: () => void;
   complaintId?: string; // If creating service from a complaint
 }
-
 export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: ServiceFormProps) {
   const { userProfile } = useAuthContext();
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
   const [customers, setCustomers] = useState<Customer[]>([]);
-
   // Form fields
   const [customerId, setCustomerId] = useState('');
   const [serviceType, setServiceType] = useState<ServiceType>('maintenance');
   const [description, setDescription] = useState('');
   const [scheduledDate, setScheduledDate] = useState('');
   const [estimatedHours, setEstimatedHours] = useState('');
-
   const serviceTypeOptions = [
     { value: 'installation', label: 'Installation' },
     { value: 'maintenance', label: 'Maintenance' },
@@ -57,11 +50,9 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
     { value: 'emergency', label: 'Emergency Service' },
     { value: 'other', label: 'Other' },
   ];
-
   useEffect(() => {
     fetchCustomers();
   }, []);
-
   const fetchCustomers = async () => {
     try {
       const { data, error } = await supabase
@@ -69,19 +60,16 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
         .select('id, customer_code, contact_person, billing_address')
         .eq('status', 'active')
         .order('customer_code');
-
       if (error) throw error;
       setCustomers(data || []);
     } catch (error: any) {
       console.error('Error fetching customers:', error);
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
     setLoading(true);
-
     try {
       const serviceData: any = {
         customer_id: customerId,
@@ -89,36 +77,28 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
         description: description.trim(),
         estimated_hours: estimatedHours ? parseFloat(estimatedHours) : null,
       };
-
       // Add scheduled date if provided
       if (scheduledDate) {
         serviceData.scheduled_date = new Date(scheduledDate).toISOString();
       }
-
       // Link to complaint if provided
       if (complaintId) {
         serviceData.complaint_id = complaintId;
       }
-
       const { error: serviceError } = await supabase
         .from('services')
         .insert(serviceData);
-
       if (serviceError) throw serviceError;
-
       setSuccess(true);
-      
       // Reset form
       setCustomerId('');
       setServiceType('maintenance');
       setDescription('');
       setScheduledDate('');
       setEstimatedHours('');
-
       if (onSubmitSuccess) {
         onSubmitSuccess();
       }
-
     } catch (error: any) {
       console.error('Error creating service:', error);
       setError(error.message || 'Failed to create service request');
@@ -126,7 +106,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
       setLoading(false);
     }
   };
-
   if (success) {
     return (
       <Card className="w-full max-w-2xl mx-auto">
@@ -160,7 +139,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
       </Card>
     );
   }
-
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
@@ -171,7 +149,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
           Create a new service request for a customer.
         </p>
       </CardHeader>
-
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           {error && (
@@ -179,7 +156,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
               {error}
             </div>
           )}
-
           <div>
             <label htmlFor="customer" className="block text-sm font-medium text-gray-700 mb-2">
               Customer
@@ -199,7 +175,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
               ))}
             </select>
           </div>
-
           <div>
             <label htmlFor="serviceType" className="block text-sm font-medium text-gray-700 mb-2">
               Service Type
@@ -218,7 +193,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
               ))}
             </select>
           </div>
-
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-2">
               Service Description
@@ -233,7 +207,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
               required
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <Input
               label="Scheduled Date (Optional)"
@@ -242,7 +215,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
               value={scheduledDate}
               onChange={(e) => setScheduledDate(e.target.value)}
             />
-
             <Input
               label="Estimated Hours (Optional)"
               id="estimatedHours"
@@ -254,7 +226,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
               placeholder="e.g., 2.5"
             />
           </div>
-
           <div className="flex gap-4">
             <Button
               type="submit"
@@ -264,7 +235,6 @@ export default function ServiceForm({ onSubmitSuccess, onCancel, complaintId }: 
             >
               {loading ? 'Creating...' : 'Create Service Request'}
             </Button>
-            
             {onCancel && (
               <Button
                 type="button"

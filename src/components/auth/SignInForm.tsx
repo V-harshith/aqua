@@ -30,11 +30,11 @@ export default function SignInForm() {
     }
 
     try {
-      console.log('🔑 Attempting sign-in for:', email);
+
       setMessage('Signing in...');
 
       const { data, error } = await signIn(email, password);
-      
+
       if (error) {
         console.error('🔑 Sign-in error:', error);
         setMessage(`Error: ${error.message}`);
@@ -43,9 +43,9 @@ export default function SignInForm() {
       }
 
       if (data.user) {
-        console.log('🔑 Sign-in successful:', data.user.email);
+
         setMessage('✅ Sign-in successful! Redirecting...');
-        
+
         // Use router.push for proper Next.js navigation
         router.push('/dashboard');
         router.refresh();
@@ -82,7 +82,7 @@ export default function SignInForm() {
             )}
           </div>
         </CardHeader>
-        
+
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-4">
             <Input
@@ -124,7 +124,7 @@ export default function SignInForm() {
             </Button>
           </form>
         </CardContent>
-        
+
         <CardFooter>
           <div className="text-center text-sm w-full">
             Don't have an account?{' '}

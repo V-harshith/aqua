@@ -1,11 +1,9 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { Card } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-
 interface Technician {
   id: string;
   full_name: string;
@@ -13,23 +11,19 @@ interface Technician {
   phone: string;
   is_available: boolean;
 }
-
 export default function TechniciansPage() {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     loadTechnicians();
   }, []);
-
   const loadTechnicians = async () => {
     setIsLoading(true);
     try {
       const response = await fetch('/api/technicians');
       const result = await response.json();
-      
       if (result.success) {
         setTechnicians(result.technicians || []);
       } else {
@@ -41,7 +35,6 @@ export default function TechniciansPage() {
       setIsLoading(false);
     }
   };
-
   const updateAvailability = async (technicianId: string, availability: boolean) => {
     try {
       const response = await fetch('/api/technicians', {
@@ -49,9 +42,7 @@ export default function TechniciansPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ technicianId, availability })
       });
-
       const result = await response.json();
-      
       if (result.success) {
         showSuccess({ title: 'Availability updated' });
         loadTechnicians();
@@ -62,15 +53,12 @@ export default function TechniciansPage() {
       showError({ title: 'Failed to update' });
     }
   };
-
   if (isLoading) {
     return <div className="p-6"><div className="animate-pulse">Loading...</div></div>;
   }
-
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Technician Management</h1>
-      
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
         {technicians.map((technician) => (
           <Card key={technician.id} className="p-4">

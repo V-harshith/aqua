@@ -15,27 +15,25 @@ export function useAuth() {
     // Fetch user profile from our database
     const fetchUserProfile = async (userId: string): Promise<WaterUser | null> => {
       try {
-        console.log('🔍 Fetching profile for user ID:', userId);
-        
+
         // Try to fetch the user profile
         const { data, error } = await supabase
           .from('users')
           .select('*')
           .eq('id', userId)
           .single();
-        
+
         if (error) {
           console.error('🔍 Error fetching profile:', error.code, error.message);
-          
+
           // If user doesn't exist in profiles table, try to create one
           if (error.code === 'PGRST116') {
-            console.log('🔍 Profile not found, creating new profile...');
+
             return await createUserProfile(userId);
           }
           return null;
         }
-        
-        console.log('🔍 Successfully fetched profile:', data?.email);
+
         return data;
       } catch (error) {
         console.error('🔍 Exception in fetchUserProfile:', error);
@@ -47,9 +45,9 @@ export function useAuth() {
     const createUserProfile = async (userId: string): Promise<WaterUser | null> => {
       try {
         const { data: { user: authUser } } = await supabase.auth.getUser();
-        
+
         if (!authUser) return null;
-        
+
         const newProfile: Partial<WaterUser> = {
           id: authUser.id,
           email: authUser.email || '',
@@ -61,21 +59,18 @@ export function useAuth() {
           address: authUser.user_metadata?.address,
           is_active: true
         };
-        
-        console.log('🔍 Creating profile for:', newProfile.email);
-        
+
         const { data, error } = await supabase
           .from('users')
           .insert(newProfile)
           .select()
           .single();
-        
+
         if (error) {
           console.error('🔍 Error creating profile:', error.code, error.message);
           return null;
         }
-        
-        console.log('🔍 Successfully created profile');
+
         return data;
       } catch (error) {
         console.error('🔍 Exception in createUserProfile:', error);
@@ -88,8 +83,7 @@ export function useAuth() {
       if (error?.message?.includes('refresh_token_not_found') || 
           error?.message?.includes('Invalid refresh token') ||
           error?.message?.includes('AuthSessionMissingError')) {
-        console.log('🔄 Refresh token invalid, redirecting to sign-in...');
-        
+
         // Only redirect if not already on auth pages
         const authPages = ['/signin', '/signup', '/reset-password', '/update-password'];
         if (!authPages.some(page => pathname?.startsWith(page))) {
@@ -103,10 +97,10 @@ export function useAuth() {
     // Get current session and user profile
     const getInitialSession = async () => {
       setLoading(true);
-      
+
       try {
         const { data: { session }, error } = await supabase.auth.getSession();
-        
+
         if (error) {
           console.error('🔍 Error getting session:', error);
           if (handleAuthError(error)) {
@@ -114,12 +108,10 @@ export function useAuth() {
             return;
           }
         }
-        
-        console.log('🔍 Session:', !!session, 'User:', !!session?.user);
-        
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           const profile = await fetchUserProfile(session.user.id);
           setUserProfile(profile);
@@ -139,27 +131,26 @@ export function useAuth() {
     // Listen for auth changes
     const { data: { subscription } } = supabase.auth.onAuthStateChange(
       async (event, session) => {
-        console.log('🔍 Auth changed:', event, !!session);
-        
+
         // Handle token refresh errors
         if (event === 'TOKEN_REFRESHED' && !session) {
-          console.log('🔄 Token refresh failed, redirecting to sign-in...');
+
           const authPages = ['/signin', '/signup', '/reset-password', '/update-password'];
           if (!authPages.some(page => pathname?.startsWith(page))) {
             router.push('/signin');
           }
         }
-        
+
         setSession(session);
         setUser(session?.user ?? null);
-        
+
         if (session?.user) {
           const profile = await fetchUserProfile(session.user.id);
           setUserProfile(profile);
         } else {
           setUserProfile(null);
         }
-        
+
         setLoading(false);
       }
     );
@@ -184,7 +175,7 @@ export function useAuth() {
         data: userData || {}
       }
     });
-    
+
     return { data, error };
   };
 
@@ -193,7 +184,7 @@ export function useAuth() {
       email,
       password,
     });
-    
+
     return { data, error };
   };
 

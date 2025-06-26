@@ -1,12 +1,10 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { Card } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-
 interface AnalyticsData {
   totalComplaints: number;
   resolvedComplaints: number;
@@ -24,18 +22,15 @@ interface AnalyticsData {
     revenueThisWeek: number[];
   };
 }
-
 export default function AnalyticsPage() {
   const { user } = useAuth();
   const { success, error } = useToast();
   const [analyticsData, setAnalyticsData] = useState<AnalyticsData | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTimeframe, setSelectedTimeframe] = useState<'7d' | '30d' | '90d' | '1y'>('30d');
-
   useEffect(() => {
     loadAnalyticsData();
   }, [selectedTimeframe]);
-
   const loadAnalyticsData = async () => {
     setIsLoading(true);
     try {
@@ -57,7 +52,6 @@ export default function AnalyticsPage() {
           revenueThisWeek: [3200, 2800, 3500, 2900, 3100, 2600, 3400]
         }
       };
-
       setAnalyticsData(mockData);
       success({ title: 'Analytics Loaded', message: 'Analytics data updated successfully' });
     } catch (err) {
@@ -66,18 +60,15 @@ export default function AnalyticsPage() {
       setIsLoading(false);
     }
   };
-
   const getResolutionRate = () => {
     if (!analyticsData) return 0;
     return Math.round((analyticsData.resolvedComplaints / analyticsData.totalComplaints) * 100);
   };
-
   const getRevenueGrowth = () => {
     if (!analyticsData) return 0;
     const { thisMonth, lastMonth } = analyticsData.revenueMetrics;
     return Math.round(((thisMonth - lastMonth) / lastMonth) * 100);
   };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gray-50 flex items-center justify-center">
@@ -88,7 +79,6 @@ export default function AnalyticsPage() {
       </div>
     );
   }
-
   return (
     <RoleGuard allowedRoles={['admin', 'dept_head', 'service_manager', 'product_manager', 'accounts_manager']}>
       <div className="min-h-screen bg-gray-50">
@@ -98,7 +88,6 @@ export default function AnalyticsPage() {
             <h1 className="text-3xl font-bold text-gray-900">Analytics Dashboard</h1>
             <p className="text-gray-600 mt-2">Comprehensive insights and performance metrics</p>
           </div>
-
           {/* Time Range Selector */}
           <div className="mb-6">
             <div className="flex space-x-2">
@@ -116,7 +105,6 @@ export default function AnalyticsPage() {
               ))}
             </div>
           </div>
-
           {/* Key Metrics */}
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
             <Card>
@@ -133,7 +121,6 @@ export default function AnalyticsPage() {
                 </p>
               </div>
             </Card>
-
             <Card>
               <div className="p-6">
                 <div className="flex items-center justify-between">
@@ -146,7 +133,6 @@ export default function AnalyticsPage() {
                 <p className="text-sm text-gray-500 mt-2">Average hours to resolve</p>
               </div>
             </Card>
-
             <Card>
               <div className="p-6">
                 <div className="flex items-center justify-between">
@@ -159,7 +145,6 @@ export default function AnalyticsPage() {
                 <p className="text-sm text-gray-500 mt-2">Average rating</p>
               </div>
             </Card>
-
             <Card>
               <div className="p-6">
                 <div className="flex items-center justify-between">
@@ -173,7 +158,6 @@ export default function AnalyticsPage() {
               </div>
             </Card>
           </div>
-
           {/* Charts Section */}
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-8">
             {/* Complaints Trend */}
@@ -198,7 +182,6 @@ export default function AnalyticsPage() {
                 </div>
               </div>
             </Card>
-
             {/* Services Trend */}
             <Card>
               <div className="p-6">
@@ -222,7 +205,6 @@ export default function AnalyticsPage() {
               </div>
             </Card>
           </div>
-
           {/* Performance Summary */}
           <Card className="mt-6">
             <div className="p-6">
@@ -243,7 +225,6 @@ export default function AnalyticsPage() {
               </div>
             </div>
           </Card>
-
           {/* Actions */}
           <div className="mt-8 flex space-x-4">
             <Button variant="primary" onClick={loadAnalyticsData}>

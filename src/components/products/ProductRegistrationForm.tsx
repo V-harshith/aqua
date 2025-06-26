@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import Button from '../ui/Button';
@@ -7,7 +6,6 @@ import Input from '../ui/Input';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
-
 interface Product {
   id: string;
   product_code: string;
@@ -19,7 +17,6 @@ interface Product {
   base_price: number;
   warranty_months: number;
 }
-
 interface Customer {
   id: string;
   first_name: string;
@@ -28,14 +25,12 @@ interface Customer {
   phone: string;
   address: string;
 }
-
 interface Technician {
   id: string;
   first_name: string;
   last_name: string;
   email: string;
 }
-
 interface ProductRegistrationData {
   customer_id: string;
   product_id: string;
@@ -48,11 +43,9 @@ interface ProductRegistrationData {
   subscription_amount: number;
   subscription_duration: number;
 }
-
 export const ProductRegistrationForm: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
   const showToast = (message: string, type: 'success' | 'error') => {
     if (type === 'success') {
       showSuccess({ title: message });
@@ -60,13 +53,11 @@ export const ProductRegistrationForm: React.FC = () => {
       showError({ title: message });
     }
   };
-
   const [products, setProducts] = useState<Product[]>([]);
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
-
   const [formData, setFormData] = useState<ProductRegistrationData>({
     customer_id: '',
     product_id: '',
@@ -79,7 +70,6 @@ export const ProductRegistrationForm: React.FC = () => {
     subscription_amount: 0,
     subscription_duration: 12,
   });
-
   const [subscriptionPlans] = useState({
     amc: [
       { name: 'Basic AMC', amount: 2000, duration: 12, services: ['Quarterly service', 'Filter replacement'] },
@@ -90,11 +80,9 @@ export const ProductRegistrationForm: React.FC = () => {
       { name: 'Premium CMC', amount: 8000, duration: 12, services: ['All services', 'Upgrade support', '24/7 emergency'] },
     ],
   });
-
   useEffect(() => {
     loadInitialData();
   }, []);
-
   const loadInitialData = async () => {
     try {
       // Load products
@@ -102,27 +90,22 @@ export const ProductRegistrationForm: React.FC = () => {
         .from('product_catalog')
         .select('*')
         .eq('status', 'active');
-
       if (productsError) throw productsError;
       setProducts(productsData || []);
-
       // Load customers
       const { data: customersData, error: customersError } = await supabase
         .from('users')
         .select('id, first_name, last_name, email, phone, address')
         .eq('role', 'customer')
         .eq('status', 'active');
-
       if (customersError) throw customersError;
       setCustomers(customersData || []);
-
       // Load technicians
       const { data: techniciansData, error: techniciansError } = await supabase
         .from('users')
         .select('id, first_name, last_name, email')
         .eq('role', 'technician')
         .eq('status', 'active');
-
       if (techniciansError) throw techniciansError;
       setTechnicians(techniciansData || []);
     } catch (error: any) {
@@ -130,13 +113,11 @@ export const ProductRegistrationForm: React.FC = () => {
       showToast(error.message || 'Failed to load data', 'error');
     }
   };
-
   const handleProductChange = (productId: string) => {
     const product = products.find(p => p.id === productId);
     setSelectedProduct(product || null);
     setFormData(prev => ({ ...prev, product_id: productId }));
   };
-
   const handleSubscriptionTypeChange = (type: 'none' | 'amc' | 'cmc') => {
     setFormData(prev => ({
       ...prev,
@@ -145,11 +126,9 @@ export const ProductRegistrationForm: React.FC = () => {
       subscription_amount: 0,
     }));
   };
-
   const handleSubscriptionPlanChange = (planName: string) => {
     const plans = formData.subscription_type === 'amc' ? subscriptionPlans.amc : subscriptionPlans.cmc;
     const plan = plans.find(p => p.name === planName);
-    
     if (plan) {
       setFormData(prev => ({
         ...prev,
@@ -159,21 +138,17 @@ export const ProductRegistrationForm: React.FC = () => {
       }));
     }
   };
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
     if (!formData.customer_id || !formData.product_id || !formData.serial_number) {
       showToast('Please fill all required fields', 'error');
       return;
     }
-
     setIsLoading(true);
     try {
       // Create customer product registration
       const warrantyEndDate = new Date(formData.installation_date);
       warrantyEndDate.setMonth(warrantyEndDate.getMonth() + (selectedProduct?.warranty_months || 12));
-
       const { data: customerProduct, error: productError } = await supabase
         .from('customer_products')
         .insert([{
@@ -188,21 +163,16 @@ export const ProductRegistrationForm: React.FC = () => {
         }])
         .select()
         .single();
-
       if (productError) throw productError;
-
       // Create subscription if selected
       if (formData.subscription_type !== 'none' && formData.subscription_plan) {
         const subscriptionStartDate = new Date(formData.installation_date);
         const subscriptionEndDate = new Date(subscriptionStartDate);
         subscriptionEndDate.setMonth(subscriptionEndDate.getMonth() + formData.subscription_duration);
-
         const nextServiceDate = new Date(subscriptionStartDate);
         nextServiceDate.setMonth(nextServiceDate.getMonth() + 3); // First service after 3 months
-
         const plans = formData.subscription_type === 'amc' ? subscriptionPlans.amc : subscriptionPlans.cmc;
         const planDetails = plans.find(p => p.name === formData.subscription_plan);
-
         const { error: subscriptionError } = await supabase
           .from('product_subscriptions')
           .insert([{
@@ -219,12 +189,9 @@ export const ProductRegistrationForm: React.FC = () => {
             total_services_allowed: formData.subscription_type === 'amc' ? 4 : 6,
             created_by: user?.id,
           }]);
-
         if (subscriptionError) throw subscriptionError;
       }
-
       showToast('Product registered successfully!', 'success');
-      
       // Reset form
       setFormData({
         customer_id: '',
@@ -239,7 +206,6 @@ export const ProductRegistrationForm: React.FC = () => {
         subscription_duration: 12,
       });
       setSelectedProduct(null);
-
     } catch (error: any) {
       console.error('Error registering product:', error);
       showToast(error.message || 'Failed to register product', 'error');
@@ -247,13 +213,11 @@ export const ProductRegistrationForm: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   return (
     <div className="max-w-4xl mx-auto p-6">
       <Card>
         <div className="p-6">
           <h2 className="text-2xl font-bold text-gray-900 mb-6">Product Registration</h2>
-          
           <form onSubmit={handleSubmit} className="space-y-6">
             {/* Customer Selection */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -275,7 +239,6 @@ export const ProductRegistrationForm: React.FC = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Product *
@@ -295,7 +258,6 @@ export const ProductRegistrationForm: React.FC = () => {
                 </select>
               </div>
             </div>
-
             {/* Product Details */}
             {selectedProduct && (
               <div className="bg-blue-50 p-4 rounded-lg">
@@ -306,7 +268,6 @@ export const ProductRegistrationForm: React.FC = () => {
                 </p>
               </div>
             )}
-
             {/* Installation Details */}
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
               <div>
@@ -321,7 +282,6 @@ export const ProductRegistrationForm: React.FC = () => {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-2">
                   Installation Date *
@@ -334,7 +294,6 @@ export const ProductRegistrationForm: React.FC = () => {
                 />
               </div>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Installation Address *
@@ -348,7 +307,6 @@ export const ProductRegistrationForm: React.FC = () => {
                 required
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Installation Technician
@@ -366,11 +324,9 @@ export const ProductRegistrationForm: React.FC = () => {
                 ))}
               </select>
             </div>
-
             {/* Subscription Options */}
             <div className="border-t pt-6">
               <h3 className="text-lg font-semibold text-gray-900 mb-4">Subscription Options</h3>
-              
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
@@ -383,7 +339,6 @@ export const ProductRegistrationForm: React.FC = () => {
                   />
                   <span>No Subscription</span>
                 </label>
-                
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
@@ -395,7 +350,6 @@ export const ProductRegistrationForm: React.FC = () => {
                   />
                   <span>AMC (Annual Maintenance)</span>
                 </label>
-                
                 <label className="flex items-center space-x-2 cursor-pointer">
                   <input
                     type="radio"
@@ -408,7 +362,6 @@ export const ProductRegistrationForm: React.FC = () => {
                   <span>CMC (Comprehensive Maintenance)</span>
                 </label>
               </div>
-
               {formData.subscription_type !== 'none' && (
                 <div className="space-y-4">
                   <div>
@@ -429,7 +382,6 @@ export const ProductRegistrationForm: React.FC = () => {
                       ))}
                     </select>
                   </div>
-
                   {formData.subscription_plan && (
                     <div className="bg-green-50 p-4 rounded-lg">
                       <h4 className="font-semibold text-green-900">Plan Includes:</h4>
@@ -447,7 +399,6 @@ export const ProductRegistrationForm: React.FC = () => {
                 </div>
               )}
             </div>
-
             <div className="flex justify-end space-x-4">
               <Button
                 type="button"

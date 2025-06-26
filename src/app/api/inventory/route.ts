@@ -1,16 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!
 );
-
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const action = searchParams.get('action');
-
     switch (action) {
       case 'stats':
         return NextResponse.json({
@@ -23,7 +20,6 @@ export async function GET(request: NextRequest) {
             totalInventoryValue: 125000
           }
         });
-        
       case 'alerts':
         return NextResponse.json({
           success: true,
@@ -37,7 +33,6 @@ export async function GET(request: NextRequest) {
             }
           ]
         });
-        
       default:
         return NextResponse.json({
           success: true,
@@ -53,22 +48,18 @@ export async function GET(request: NextRequest) {
           ]
         });
     }
-
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
-
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const { action, productId, quantity } = body;
-
     return NextResponse.json({
       success: true,
       message: `${action} completed for product ${productId}`
     });
-
   } catch (error) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }

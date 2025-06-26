@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import Button from '../ui/Button';
@@ -7,7 +6,6 @@ import Input from '../ui/Input';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
-
 interface Assignment {
   id: string;
   service_request_id: string;
@@ -32,7 +30,6 @@ interface Assignment {
     };
   };
 }
-
 interface ServiceExecution {
   work_performed: string;
   root_cause_analysis: string;
@@ -49,18 +46,15 @@ interface ServiceExecution {
   follow_up_required: boolean;
   follow_up_date: string;
 }
-
 export const TechnicianDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
   const [activeTab, setActiveTab] = useState<'today' | 'upcoming' | 'history'>('today');
   const [assignments, setAssignments] = useState<Assignment[]>([]);
   const [selectedAssignment, setSelectedAssignment] = useState<Assignment | null>(null);
   const [showExecutionModal, setShowExecutionModal] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
   const [currentLocation, setCurrentLocation] = useState<{lat: number, lng: number} | null>(null);
-
   const [executionData, setExecutionData] = useState<ServiceExecution>({
     work_performed: '',
     root_cause_analysis: '',
@@ -73,19 +67,16 @@ export const TechnicianDashboard: React.FC = () => {
     follow_up_required: false,
     follow_up_date: '',
   });
-
   const [stats, setStats] = useState({
     todays_assignments: 0,
     completed_today: 0,
     pending_assignments: 0,
     average_rating: 0,
   });
-
   useEffect(() => {
     loadTechnicianData();
     getCurrentLocation();
   }, []);
-
   const getCurrentLocation = () => {
     if (navigator.geolocation) {
       navigator.geolocation.getCurrentPosition(
@@ -96,12 +87,10 @@ export const TechnicianDashboard: React.FC = () => {
           });
         },
         (error) => {
-          console.log('Location access denied or unavailable');
         }
       );
     }
   };
-
   const loadTechnicianData = async () => {
     setIsLoading(true);
     try {
@@ -115,10 +104,8 @@ export const TechnicianDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const loadAssignments = async () => {
     const today = new Date().toISOString().split('T')[0];
-    
     const { data, error } = await supabase
       .from('service_assignments')
       .select(`
@@ -142,15 +129,12 @@ export const TechnicianDashboard: React.FC = () => {
       .gte('scheduled_date', today)
       .order('scheduled_date', { ascending: true })
       .order('scheduled_time_start', { ascending: true });
-
     if (error) throw error;
     setAssignments(data || []);
   };
-
   const loadStats = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
       const [todaysAssignments, completedToday, pendingAssignments] = await Promise.all([
         supabase
           .from('service_assignments')
@@ -169,7 +153,6 @@ export const TechnicianDashboard: React.FC = () => {
           .eq('assigned_technician_id', user?.id)
           .eq('acceptance_status', 'pending'),
       ]);
-
       setStats({
         todays_assignments: todaysAssignments.count || 0,
         completed_today: completedToday.count || 0,
@@ -180,14 +163,12 @@ export const TechnicianDashboard: React.FC = () => {
       console.error('Error loading stats:', error);
     }
   };
-
   const updateAssignmentStatus = async (assignmentId: string, status: string, acceptance_status?: string) => {
     try {
       const updateData: any = { status };
       if (acceptance_status) {
         updateData.acceptance_status = acceptance_status;
       }
-      
       // Add timestamps based on status
       if (status === 'accepted') {
         updateData.accepted_at = new Date().toISOString();
@@ -196,32 +177,26 @@ export const TechnicianDashboard: React.FC = () => {
       } else if (status === 'completed') {
         updateData.completed_at = new Date().toISOString();
       }
-
       const { error } = await supabase
         .from('service_assignments')
         .update(updateData)
         .eq('id', assignmentId);
-
       if (error) throw error;
-
       showSuccess({ title: `Assignment ${status} successfully!` });
       loadAssignments();
     } catch (error: any) {
       showError({ title: error.message || 'Failed to update assignment' });
     }
   };
-
   const completeService = async () => {
     if (!selectedAssignment || !executionData.work_performed) {
       showError({ title: 'Please fill in the work performed field' });
       return;
     }
-
     setIsLoading(true);
     try {
       // Calculate total service cost
       const totalCost = executionData.materials_cost + (executionData.labor_hours * 100); // Assuming ₹100/hour
-
       const serviceExecutionData = {
         service_assignment_id: selectedAssignment.id,
         actual_start_time: new Date().toISOString(),
@@ -238,16 +213,12 @@ export const TechnicianDashboard: React.FC = () => {
         follow_up_required: executionData.follow_up_required,
         follow_up_date: executionData.follow_up_date || null,
       };
-
       const { error: executionError } = await supabase
         .from('service_executions')
         .insert([serviceExecutionData]);
-
       if (executionError) throw executionError;
-
       // Update assignment status to completed
       await updateAssignmentStatus(selectedAssignment.id, 'completed');
-
       // Update service request status
       const { error: requestUpdateError } = await supabase
         .from('service_requests')
@@ -256,22 +227,18 @@ export const TechnicianDashboard: React.FC = () => {
           actual_cost: totalCost
         })
         .eq('id', selectedAssignment.service_request_id);
-
       if (requestUpdateError) throw requestUpdateError;
-
       showSuccess({ title: 'Service completed successfully!' });
       setShowExecutionModal(false);
       setSelectedAssignment(null);
       resetExecutionData();
       loadTechnicianData();
-
     } catch (error: any) {
       showError({ title: error.message || 'Failed to complete service' });
     } finally {
       setIsLoading(false);
     }
   };
-
   const resetExecutionData = () => {
     setExecutionData({
       work_performed: '',
@@ -286,14 +253,12 @@ export const TechnicianDashboard: React.FC = () => {
       follow_up_date: '',
     });
   };
-
   const addPart = () => {
     setExecutionData(prev => ({
       ...prev,
       parts_used: [...prev.parts_used, { part_name: '', quantity: 1, cost: 0 }]
     }));
   };
-
   const updatePart = (index: number, field: string, value: any) => {
     setExecutionData(prev => ({
       ...prev,
@@ -302,14 +267,12 @@ export const TechnicianDashboard: React.FC = () => {
       )
     }));
   };
-
   const removePart = (index: number) => {
     setExecutionData(prev => ({
       ...prev,
       parts_used: prev.parts_used.filter((_, i) => i !== index)
     }));
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'emergency': return 'text-red-700 bg-red-100';
@@ -320,7 +283,6 @@ export const TechnicianDashboard: React.FC = () => {
       default: return 'text-gray-700 bg-gray-100';
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'assigned': return 'text-blue-700 bg-blue-100';
@@ -332,11 +294,9 @@ export const TechnicianDashboard: React.FC = () => {
       default: return 'text-gray-700 bg-gray-100';
     }
   };
-
   const filteredAssignments = assignments.filter(assignment => {
     const today = new Date().toISOString().split('T')[0];
     const assignmentDate = assignment.scheduled_date;
-    
     if (activeTab === 'today') {
       return assignmentDate === today;
     } else if (activeTab === 'upcoming') {
@@ -345,7 +305,6 @@ export const TechnicianDashboard: React.FC = () => {
       return assignmentDate < today;
     }
   });
-
   return (
     <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
@@ -353,7 +312,6 @@ export const TechnicianDashboard: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">Technician Dashboard</h1>
         <p className="text-gray-600">Manage your service assignments and track progress</p>
       </div>
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
         <Card>
@@ -381,7 +339,6 @@ export const TechnicianDashboard: React.FC = () => {
           </div>
         </Card>
       </div>
-
       {/* Tab Navigation */}
       <div className="flex space-x-1 mb-6">
         {[
@@ -402,7 +359,6 @@ export const TechnicianDashboard: React.FC = () => {
           </button>
         ))}
       </div>
-
       {/* Assignments List */}
       <div className="space-y-4">
         {filteredAssignments.map(assignment => (
@@ -419,7 +375,6 @@ export const TechnicianDashboard: React.FC = () => {
                       {assignment.status}
                     </span>
                   </div>
-                  
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm text-gray-600">
                     <div>
                       <p><strong>Customer:</strong> {assignment.service_request.customer.full_name}</p>
@@ -432,13 +387,11 @@ export const TechnicianDashboard: React.FC = () => {
                       <p><strong>Date:</strong> {new Date(assignment.scheduled_date).toLocaleDateString()}</p>
                     </div>
                   </div>
-                  
                   <div className="mt-4 p-3 bg-gray-50 rounded">
                     <p className="text-sm"><strong>Problem:</strong> {assignment.service_request.problem_description}</p>
                   </div>
                 </div>
               </div>
-
               {/* Action Buttons */}
               <div className="flex flex-wrap gap-2">
                 {assignment.acceptance_status === 'pending' && (
@@ -458,7 +411,6 @@ export const TechnicianDashboard: React.FC = () => {
                     </Button>
                   </>
                 )}
-                
                 {assignment.status === 'accepted' && (
                   <Button
                     size="sm"
@@ -467,7 +419,6 @@ export const TechnicianDashboard: React.FC = () => {
                     Start Journey
                   </Button>
                 )}
-                
                 {assignment.status === 'en_route' && (
                   <Button
                     size="sm"
@@ -476,7 +427,6 @@ export const TechnicianDashboard: React.FC = () => {
                     Mark Arrived
                   </Button>
                 )}
-                
                 {assignment.status === 'arrived' && (
                   <Button
                     size="sm"
@@ -485,7 +435,6 @@ export const TechnicianDashboard: React.FC = () => {
                     Start Work
                   </Button>
                 )}
-                
                 {assignment.status === 'in_progress' && (
                   <Button
                     size="sm"
@@ -497,7 +446,6 @@ export const TechnicianDashboard: React.FC = () => {
                     Complete Service
                   </Button>
                 )}
-
                 <Button
                   size="sm"
                   variant="secondary"
@@ -508,7 +456,6 @@ export const TechnicianDashboard: React.FC = () => {
                 >
                   Navigate
                 </Button>
-                
                 <Button
                   size="sm"
                   variant="secondary"
@@ -524,14 +471,12 @@ export const TechnicianDashboard: React.FC = () => {
           </Card>
         ))}
       </div>
-
       {/* Service Completion Modal */}
       {showExecutionModal && selectedAssignment && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
           <div className="bg-white rounded-lg w-full max-w-4xl max-h-[90vh] overflow-y-auto">
             <div className="p-6">
               <h3 className="text-lg font-semibold mb-4">Complete Service - {selectedAssignment.service_request.request_number}</h3>
-              
               <div className="space-y-6">
                 {/* Work Performed */}
                 <div>
@@ -547,7 +492,6 @@ export const TechnicianDashboard: React.FC = () => {
                     required
                   />
                 </div>
-
                 {/* Root Cause Analysis */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -561,7 +505,6 @@ export const TechnicianDashboard: React.FC = () => {
                     placeholder="What was the root cause of the problem?"
                   />
                 </div>
-
                 {/* Solution Provided */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -575,14 +518,12 @@ export const TechnicianDashboard: React.FC = () => {
                     placeholder="What solution was implemented?"
                   />
                 </div>
-
                 {/* Parts Used */}
                 <div>
                   <div className="flex justify-between items-center mb-2">
                     <label className="block text-sm font-medium text-gray-700">Parts Used</label>
                     <Button size="sm" onClick={addPart}>Add Part</Button>
                   </div>
-                  
                   {executionData.parts_used.map((part, index) => (
                     <div key={index} className="grid grid-cols-1 md:grid-cols-4 gap-2 mb-2">
                       <Input
@@ -613,7 +554,6 @@ export const TechnicianDashboard: React.FC = () => {
                     </div>
                   ))}
                 </div>
-
                 {/* Labor and Costs */}
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div>
@@ -627,7 +567,6 @@ export const TechnicianDashboard: React.FC = () => {
                       onChange={(e) => setExecutionData(prev => ({ ...prev, labor_hours: parseFloat(e.target.value) }))}
                     />
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Materials Cost (₹)
@@ -639,7 +578,6 @@ export const TechnicianDashboard: React.FC = () => {
                       onChange={(e) => setExecutionData(prev => ({ ...prev, materials_cost: parseFloat(e.target.value) }))}
                     />
                   </div>
-                  
                   <div>
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Service Quality (1-5)
@@ -657,7 +595,6 @@ export const TechnicianDashboard: React.FC = () => {
                     </select>
                   </div>
                 </div>
-
                 {/* Follow-up */}
                 <div>
                   <label className="flex items-center space-x-2">
@@ -668,7 +605,6 @@ export const TechnicianDashboard: React.FC = () => {
                     />
                     <span className="text-sm font-medium text-gray-700">Follow-up required</span>
                   </label>
-                  
                   {executionData.follow_up_required && (
                     <div className="mt-2">
                       <Input
@@ -680,7 +616,6 @@ export const TechnicianDashboard: React.FC = () => {
                     </div>
                   )}
                 </div>
-
                 {/* Additional Notes */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -695,7 +630,6 @@ export const TechnicianDashboard: React.FC = () => {
                   />
                 </div>
               </div>
-
               <div className="flex justify-end space-x-4 mt-6">
                 <Button
                   variant="secondary"

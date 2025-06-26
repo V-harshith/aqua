@@ -1,12 +1,10 @@
 "use client";
-
 import React from 'react';
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { supabase, Complaint } from '@/lib/supabase';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
-
 type ComplaintWithDetails = Complaint & {
   customer?: {
     customer_code: string;
@@ -18,13 +16,11 @@ type ComplaintWithDetails = Complaint & {
     role: string;
   };
 };
-
 interface ComplaintsListProps {
   showActions?: boolean;
   customerId?: string;
   limit?: number;
 }
-
 export default function ComplaintsList({ 
   showActions = true, 
   customerId, 
@@ -35,16 +31,13 @@ export default function ComplaintsList({
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [filter, setFilter] = useState<'all' | 'open' | 'assigned' | 'resolved'>('all');
-
   useEffect(() => {
     fetchComplaints();
   }, [filter, customerId]);
-
   const fetchComplaints = async () => {
     try {
       setLoading(true);
       setError(null);
-
       let query = supabase
         .from('complaints')
         .select(`
@@ -52,7 +45,6 @@ export default function ComplaintsList({
           customer:customers(customer_code, contact_person, billing_address),
           assigned_user:users!assigned_to(full_name, role)
         `);
-
       // Apply filters based on user role and props
       if (customerId) {
         query = query.eq('customer_id', customerId);
@@ -63,7 +55,6 @@ export default function ComplaintsList({
           .select('id')
           .eq('user_id', userProfile.id)
           .single();
-        
         if (customerData) {
           query = query.eq('customer_id', customerData.id);
         }
@@ -71,23 +62,18 @@ export default function ComplaintsList({
         // Technician can see assigned complaints or unassigned ones
         query = query.or(`assigned_to.eq.${userProfile.id},assigned_to.is.null`);
       }
-
       // Apply status filter
       if (filter !== 'all') {
         query = query.eq('status', filter);
       }
-
       // Apply limit
       if (limit) {
         query = query.limit(limit);
       }
-
       // Order by priority and created date
       query = query.order('priority', { ascending: false })
                   .order('created_at', { ascending: false });
-
       const { data, error } = await query;
-
       if (error) throw error;
       setComplaints(data || []);
     } catch (error: any) {
@@ -97,7 +83,6 @@ export default function ComplaintsList({
       setLoading(false);
     }
   };
-
   const updateComplaintStatus = async (
     complaintId: string, 
     newStatus: string, 
@@ -108,14 +93,11 @@ export default function ComplaintsList({
       if (assignTo !== undefined) {
         updates.assigned_to = assignTo;
       }
-
       const { error } = await supabase
         .from('complaints')
         .update(updates)
         .eq('id', complaintId);
-
       if (error) throw error;
-      
       // Refresh the list
       fetchComplaints();
     } catch (error: any) {
@@ -123,11 +105,9 @@ export default function ComplaintsList({
       alert('Failed to update complaint: ' + error.message);
     }
   };
-
   const assignToSelf = (complaintId: string) => {
     updateComplaintStatus(complaintId, 'assigned', userProfile?.id);
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'critical': return 'text-red-600 bg-red-100';
@@ -137,7 +117,6 @@ export default function ComplaintsList({
       default: return 'text-gray-600 bg-gray-100';
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'open': return 'text-blue-600 bg-blue-100';
@@ -149,7 +128,6 @@ export default function ComplaintsList({
       default: return 'text-gray-600 bg-gray-100';
     }
   };
-
   if (loading) {
     return (
       <div className="flex justify-center items-center p-8">
@@ -157,7 +135,6 @@ export default function ComplaintsList({
       </div>
     );
   }
-
   if (error) {
     return (
       <div className="p-4 bg-red-100 border border-red-200 text-red-700 rounded-md">
@@ -165,7 +142,6 @@ export default function ComplaintsList({
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       {/* Filter Controls */}
@@ -213,13 +189,11 @@ export default function ComplaintsList({
               Resolved
             </button>
           </div>
-          
           <Button onClick={fetchComplaints} variant="secondary">
             Refresh
           </Button>
         </div>
       )}
-
       {/* Complaints List */}
       {complaints.length === 0 ? (
         <Card>
@@ -254,42 +228,35 @@ export default function ComplaintsList({
                         {complaint.status.replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
-                    
                     <p className="text-sm text-gray-600 mb-2">
                       <span className="font-medium">ID:</span> {complaint.complaint_number}
                     </p>
-                    
                     {complaint.customer && (
                       <p className="text-sm text-gray-600 mb-2">
                         <span className="font-medium">Customer:</span> {complaint.customer.contact_person} ({complaint.customer.customer_code})
                       </p>
                     )}
-                    
                     {complaint.assigned_user && (
                       <p className="text-sm text-gray-600 mb-2">
                         <span className="font-medium">Assigned to:</span> {complaint.assigned_user.full_name}
                       </p>
                     )}
-                    
                     {complaint.location && (
                       <p className="text-sm text-gray-600 mb-2">
                         <span className="font-medium">Location:</span> {complaint.location}
                       </p>
                     )}
                   </div>
-                  
                   <div className="text-right text-sm text-gray-500">
                     <p>{new Date(complaint.created_at).toLocaleDateString()}</p>
                     <p>{new Date(complaint.created_at).toLocaleTimeString()}</p>
                   </div>
                 </div>
-
                 <div className="mb-4">
                   <p className="text-sm text-gray-700 leading-relaxed">
                     {complaint.description}
                   </p>
                 </div>
-
                 {/* Action Buttons */}
                 {showActions && canManageComplaints() && (
                   <div className="flex gap-2 pt-4 border-t">
@@ -311,7 +278,6 @@ export default function ComplaintsList({
                         </Button>
                       </>
                     )}
-                    
                     {complaint.status === 'assigned' && (
                       <Button
                         onClick={() => updateComplaintStatus(complaint.id, 'in_progress')}
@@ -321,7 +287,6 @@ export default function ComplaintsList({
                         Start Work
                       </Button>
                     )}
-                    
                     {complaint.status === 'in_progress' && (
                       <Button
                         onClick={() => updateComplaintStatus(complaint.id, 'resolved')}
@@ -331,7 +296,6 @@ export default function ComplaintsList({
                         Mark Resolved
                       </Button>
                     )}
-                    
                     {complaint.status === 'resolved' && (
                       <Button
                         onClick={() => updateComplaintStatus(complaint.id, 'closed')}

@@ -59,24 +59,24 @@ export const TechnicianDashboard: React.FC = () => {
   const loadTechnicianData = async () => {
     try {
       setIsLoading(true);
-      
+
       // Fetch assigned and in-progress services for this technician
       const servicesResponse = await fetch(`/api/services?assigned_technician=${user?.id}&status=assigned,in_progress`);
       if (servicesResponse.ok) {
         const servicesData = await servicesResponse.json();
         const jobs = servicesData.services || [];
         setAssignedJobs(jobs);
-        
+
         // Calculate real-time stats
         const assigned = jobs.filter((j: ServiceJob) => j.status === 'assigned').length;
         const inProgress = jobs.filter((j: ServiceJob) => j.status === 'in_progress').length;
-        
+
         // Get completed jobs count separately
         const completedResponse = await fetch(`/api/services?assigned_technician=${user?.id}&status=completed`);
         if (completedResponse.ok) {
           const completedData = await completedResponse.json();
           const completed = completedData.services?.length || 0;
-          
+
           setStats({
             assignedJobs: assigned,
             inProgressJobs: inProgress,
@@ -84,8 +84,7 @@ export const TechnicianDashboard: React.FC = () => {
             avgRating: 4.5
           });
         }
-        
-        console.log('✅ Technician data loaded:', { assigned, inProgress });
+
       }
     } catch (error) {
       console.error('Error loading technician data:', error);

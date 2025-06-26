@@ -1,19 +1,15 @@
 'use client';
-
 import Link from 'next/link';
 import { useAuthContext } from '@/context/AuthContext';
 import { usePathname } from 'next/navigation';
-
 export default function AuthNav() {
   const { user } = useAuthContext();
   const pathname = usePathname();
-
   return (
     <nav className="flex justify-between items-center py-4 px-6 bg-white shadow-sm">
       <Link href="/" className="text-xl font-bold text-blue-600">
         Project Aqua
       </Link>
-      
       <div className="space-x-4">
         {user ? (
           <Link 

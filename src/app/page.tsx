@@ -16,7 +16,7 @@ export default function Home() {
   useEffect(() => {
     // Only redirect if user is authenticated
     if (!loading && user) {
-      console.log('🏠 User authenticated, redirecting to dashboard');
+
       router.push('/dashboard');
     }
   }, [user, loading, router]);
@@ -34,7 +34,7 @@ export default function Home() {
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-cyan-100">
       <div className="min-h-screen flex items-center justify-center p-4">
         <div className="max-w-6xl w-full grid grid-cols-1 lg:grid-cols-2 gap-8 items-center">
-          
+
           {/* Left side - Branding */}
           <div className="text-center lg:text-left">
             <div className="mb-8">

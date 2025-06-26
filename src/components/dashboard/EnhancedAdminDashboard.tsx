@@ -1,5 +1,4 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToastContext } from '@/context/ToastContext';
@@ -8,7 +7,6 @@ import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-
 interface AllUserData {
   users: any[];
   complaints: any[];
@@ -26,7 +24,6 @@ interface AllUserData {
     lastUpdated: string;
   };
 }
-
 export const EnhancedAdminDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success, error } = useToastContext();
@@ -36,14 +33,12 @@ export const EnhancedAdminDashboard: React.FC = () => {
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'complaints' | 'services' | 'export'>('overview');
   const [isExporting, setIsExporting] = useState(false);
   const [signingOut, setSigningOut] = useState(false);
-
   useEffect(() => {
     loadAllData();
     // Auto-refresh every 30 seconds for real-time data
     const interval = setInterval(loadAllData, 30000);
     return () => clearInterval(interval);
   }, []);
-
   const handleSignOut = async () => {
     try {
       setSigningOut(true);
@@ -59,11 +54,9 @@ export const EnhancedAdminDashboard: React.FC = () => {
       setSigningOut(false);
     }
   };
-
   const loadAllData = async () => {
     try {
       setIsLoading(true);
-      
       // Fetch real data from API
       const response = await fetch('/api/admin/all-data', {
         cache: 'no-store',
@@ -71,33 +64,21 @@ export const EnhancedAdminDashboard: React.FC = () => {
           'Cache-Control': 'no-cache'
         }
       });
-      
       if (!response.ok) {
         // If API fails, show a meaningful error instead of falling back to mock
         throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
       }
-      
       const data = await response.json();
-      
       if (!data) {
         throw new Error('No data received from server');
       }
-      
       setAllData(data);
-      console.log('✅ Real-time data loaded successfully:', {
-        users: data.users?.length || 0,
-        complaints: data.complaints?.length || 0,
-        services: data.services?.length || 0,
-        stats: data.stats
-      });
-      
     } catch (err: any) {
       console.error('❌ Error loading dashboard data:', err);
       error({ 
         title: 'Failed to load dashboard data', 
         message: `${err.message}. Please check your internet connection and try again.` 
       });
-      
       // Set empty state instead of mock data
       setAllData({
         users: [],
@@ -120,23 +101,17 @@ export const EnhancedAdminDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const exportData = async (type: string, format: 'csv' | 'json' | 'excel' = 'csv') => {
     try {
       setIsExporting(true);
-      console.log(`🔄 Starting export: ${type} in ${format} format`);
-      
       // Mock export for development
       const filename = `${type}_export_${new Date().toISOString().split('T')[0]}.${format}`;
-      
       // Simulate export delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
       success({ 
         title: `${type.toUpperCase()} Export Complete!`, 
         message: `Mock export for ${filename} completed` 
       });
-      
     } catch (err: any) {
       console.error('❌ Export error:', err);
       error({ 
@@ -147,7 +122,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
       setIsExporting(false);
     }
   };
-
   const formatDate = (dateString: string) => {
     return new Date(dateString).toLocaleDateString('en-US', {
       year: 'numeric',
@@ -157,7 +131,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
       minute: '2-digit'
     });
   };
-
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'active': return 'bg-green-100 text-green-800';
@@ -169,7 +142,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -180,7 +152,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="space-y-6">
       {/* Main Dashboard Header */}
@@ -210,7 +181,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
           </div>
         </div>
       </Card>
-
       {/* Real-Time Stats */}
       {allData && (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
@@ -220,21 +190,18 @@ export const EnhancedAdminDashboard: React.FC = () => {
               <div className="text-sm text-gray-600">Total Users</div>
             </div>
           </Card>
-
           <Card className="p-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-green-600">{allData.stats.activeUsers}</div>
               <div className="text-sm text-gray-600">Active Users</div>
             </div>
           </Card>
-
           <Card className="p-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-red-600">{allData.stats.openComplaints}</div>
               <div className="text-sm text-gray-600">Open Complaints</div>
             </div>
           </Card>
-
           <Card className="p-6">
             <div className="text-center">
               <div className="text-2xl font-bold text-yellow-600">{allData.stats.pendingServices}</div>
@@ -243,7 +210,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
           </Card>
         </div>
       )}
-
       {/* Navigation Tabs */}
       <Card>
         <div className="border-b border-gray-200">
@@ -271,7 +237,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
           </nav>
         </div>
       </Card>
-
       {/* Tab Content */}
       <div className="space-y-6">
         {activeTab === 'overview' && allData && (
@@ -290,7 +255,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
                 </div>
               </div>
             </Card>
-
             {/* Quick Actions */}
             <Card>
               <div className="p-6">
@@ -321,7 +285,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
             </Card>
           </div>
         )}
-
         {activeTab === 'users' && allData && (
           <Card>
             <div className="p-6">
@@ -366,7 +329,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
             </div>
           </Card>
         )}
-
         {activeTab === 'complaints' && allData && (
           <Card>
             <div className="p-6">
@@ -400,7 +362,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
             </div>
           </Card>
         )}
-
         {activeTab === 'services' && allData && (
           <Card>
             <div className="p-6">
@@ -434,7 +395,6 @@ export const EnhancedAdminDashboard: React.FC = () => {
             </div>
           </Card>
         )}
-
         {activeTab === 'export' && (
           <Card>
             <div className="p-6">

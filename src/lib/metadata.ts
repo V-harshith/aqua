@@ -1,5 +1,4 @@
 import type { Metadata, Viewport } from "next";
-
 // Centralized viewport configuration for all pages
 export const defaultViewport: Viewport = {
   width: "device-width",
@@ -8,7 +7,6 @@ export const defaultViewport: Viewport = {
   userScalable: false,
   themeColor: "#3B82F6",
 };
-
 // Base metadata for all pages
 export const defaultMetadata: Metadata = {
   title: "Project Aqua - Water Management",
@@ -28,12 +26,10 @@ export const defaultMetadata: Metadata = {
     follow: true,
   },
 };
-
 // Page-specific metadata generators
 export const createPageMetadata = (title: string, description?: string): Metadata => ({
   title: `${title} | Project Aqua`,
   description: description || defaultMetadata.description,
 });
-
 // Generate viewport for consistency
 export const createViewport = (): Viewport => defaultViewport; 

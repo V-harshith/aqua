@@ -1,11 +1,9 @@
 'use client';
-
 import UserManagement from '@/components/admin/UserManagement';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { Card } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
-
 export default function UsersPage() {
   return (
     <RoleGuard allowedRoles={['admin', 'dept_head']}>
@@ -28,7 +26,6 @@ export default function UsersPage() {
               </nav>
             </div>
           </Card>
-
           {/* Header */}
           <Card>
             <div className="flex items-center justify-between p-6">
@@ -52,7 +49,6 @@ export default function UsersPage() {
               </div>
             </div>
           </Card>
-
           {/* User Management Content */}
           <UserManagement />
         </div>

@@ -1,10 +1,7 @@
 "use client";
-
 import React, { useEffect, useState } from 'react';
 import { X, CheckCircle, AlertCircle, Info, AlertTriangle } from 'lucide-react';
-
 export type ToastType = 'success' | 'error' | 'warning' | 'info';
-
 export interface ToastProps {
   id: string;
   type: ToastType;
@@ -13,7 +10,6 @@ export interface ToastProps {
   duration?: number;
   onClose: (id: string) => void;
 }
-
 const Toast: React.FC<ToastProps> = ({
   id,
   type,
@@ -24,26 +20,21 @@ const Toast: React.FC<ToastProps> = ({
 }) => {
   const [isVisible, setIsVisible] = useState(false);
   const [isLeaving, setIsLeaving] = useState(false);
-
   useEffect(() => {
     // Show animation
     setIsVisible(true);
-
     // Auto-hide after duration
     const timer = setTimeout(() => {
       handleClose();
     }, duration);
-
     return () => clearTimeout(timer);
   }, [duration]);
-
   const handleClose = () => {
     setIsLeaving(true);
     setTimeout(() => {
       onClose(id);
     }, 300); // Animation duration
   };
-
   const getIcon = () => {
     switch (type) {
       case 'success':
@@ -58,14 +49,12 @@ const Toast: React.FC<ToastProps> = ({
         return <Info className="w-5 h-5 text-blue-500" />;
     }
   };
-
   const getStyles = () => {
     const baseStyles = `
       flex items-start p-4 mb-3 rounded-lg shadow-lg border-l-4 
       transform transition-all duration-300 ease-in-out
       ${isVisible && !isLeaving ? 'translate-x-0 opacity-100' : 'translate-x-full opacity-0'}
     `;
-
     switch (type) {
       case 'success':
         return `${baseStyles} bg-green-50 border-green-500 text-green-800`;
@@ -79,7 +68,6 @@ const Toast: React.FC<ToastProps> = ({
         return `${baseStyles} bg-gray-50 border-gray-500 text-gray-800`;
     }
   };
-
   return (
     <div className={getStyles()}>
       <div className="flex-shrink-0 mr-3">
@@ -98,5 +86,4 @@ const Toast: React.FC<ToastProps> = ({
     </div>
   );
 };
-
 export default Toast; 

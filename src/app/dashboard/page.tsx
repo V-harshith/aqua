@@ -1,5 +1,4 @@
 'use client';
-
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -13,17 +12,14 @@ import { ProductManagerDashboard } from '@/components/dashboard/ProductManagerDa
 import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
 import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
 import { supabase } from '@/lib/supabase';
-
 export default function DashboardPage() {
   const { user, userProfile, loading } = useAuthContext();
   const router = useRouter();
-
   useEffect(() => {
     if (!loading && !user) {
       router.push('/signin');
     }
   }, [user, loading, router]);
-
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -32,7 +28,6 @@ export default function DashboardPage() {
       console.error('Sign out error:', error);
     }
   };
-
   const renderRoleBasedDashboard = () => {
     if (!userProfile) {
       return (
@@ -53,7 +48,6 @@ export default function DashboardPage() {
         </div>
       );
     }
-
     // Render dashboard based on user role
     switch (userProfile.role) {
       case 'admin':
@@ -91,7 +85,6 @@ export default function DashboardPage() {
         );
     }
   };
-
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -103,7 +96,6 @@ export default function DashboardPage() {
       </div>
     );
   }
-
   if (!user) {
     return (
       <div className="min-h-screen flex items-center justify-center">
@@ -113,12 +105,10 @@ export default function DashboardPage() {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Navigation */}
       <DashboardNavigation />
-      
       {/* Main Content */}
       <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
         {renderRoleBasedDashboard()}

@@ -1,5 +1,4 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import Button from '../ui/Button';
@@ -7,7 +6,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
 import { ProductRegistrationForm } from './ProductRegistrationForm';
-
 interface DashboardStats {
   totalProducts: number;
   activeSubscriptions: number;
@@ -16,7 +14,6 @@ interface DashboardStats {
   pendingInstallations: number;
   warrantyExpiring: number;
 }
-
 interface CustomerProduct {
   id: string;
   serial_number: string;
@@ -44,7 +41,6 @@ interface CustomerProduct {
     amount: number;
   };
 }
-
 interface ServiceDue {
   id: string;
   next_service_due: string;
@@ -55,11 +51,9 @@ interface ServiceDue {
   phone: string;
   address: string;
 }
-
 export const ProductManagementDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
   const showToast = (message: string, type: 'success' | 'error') => {
     if (type === 'success') {
       showSuccess({ title: message });
@@ -67,7 +61,6 @@ export const ProductManagementDashboard: React.FC = () => {
       showError({ title: message });
     }
   };
-
   const [activeTab, setActiveTab] = useState('dashboard');
   const [stats, setStats] = useState<DashboardStats>({
     totalProducts: 0,
@@ -80,11 +73,9 @@ export const ProductManagementDashboard: React.FC = () => {
   const [customerProducts, setCustomerProducts] = useState<CustomerProduct[]>([]);
   const [servicesDue, setServicesDue] = useState<ServiceDue[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
   useEffect(() => {
     loadDashboardData();
   }, []);
-
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
@@ -100,7 +91,6 @@ export const ProductManagementDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const loadStats = async () => {
     try {
       // Get total products
@@ -108,52 +98,39 @@ export const ProductManagementDashboard: React.FC = () => {
         .from('customer_products')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
-
       if (productsError) throw productsError;
-
       // Get active subscriptions
       const { count: activeSubscriptions, error: subscriptionsError } = await supabase
         .from('product_subscriptions')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active');
-
       if (subscriptionsError) throw subscriptionsError;
-
       // Get services due this month
       const today = new Date();
       const nextMonth = new Date(today);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
-
       const { count: dueServices, error: dueServicesError } = await supabase
         .from('product_subscriptions')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
         .lte('next_service_due', nextMonth.toISOString().split('T')[0]);
-
       if (dueServicesError) throw dueServicesError;
-
       // Calculate monthly revenue from active subscriptions
       const { data: revenueData, error: revenueError } = await supabase
         .from('product_subscriptions')
         .select('amount')
         .eq('status', 'active');
-
       if (revenueError) throw revenueError;
-
       const monthlyRevenue = revenueData?.reduce((sum, sub) => sum + (sub.amount / 12), 0) || 0;
-
       // Get warranty expiring in next 3 months
       const threeMonthsFromNow = new Date(today);
       threeMonthsFromNow.setMonth(threeMonthsFromNow.getMonth() + 3);
-
       const { count: warrantyExpiring, error: warrantyError } = await supabase
         .from('customer_products')
         .select('*', { count: 'exact', head: true })
         .eq('status', 'active')
         .lte('warranty_end_date', threeMonthsFromNow.toISOString().split('T')[0]);
-
       if (warrantyError) throw warrantyError;
-
       setStats({
         totalProducts: totalProducts || 0,
         activeSubscriptions: activeSubscriptions || 0,
@@ -166,7 +143,6 @@ export const ProductManagementDashboard: React.FC = () => {
       console.error('Error loading stats:', error);
     }
   };
-
   const loadCustomerProducts = async () => {
     try {
       const { data, error } = await supabase
@@ -201,28 +177,23 @@ export const ProductManagementDashboard: React.FC = () => {
         .eq('status', 'active')
         .order('installation_date', { ascending: false })
         .limit(10);
-
       if (error) throw error;
-
       const formattedData = data?.map(item => ({
         ...item,
         customer: Array.isArray(item.customer) ? item.customer[0] : item.customer,
         product: Array.isArray(item.product) ? item.product[0] : item.product,
         subscription: item.product_subscriptions?.[0] || null,
       })) || [];
-
       setCustomerProducts(formattedData);
     } catch (error) {
       console.error('Error loading customer products:', error);
     }
   };
-
   const loadServicesDue = async () => {
     try {
       const today = new Date();
       const nextMonth = new Date(today);
       nextMonth.setMonth(nextMonth.getMonth() + 1);
-
       const { data, error } = await supabase
         .from('product_subscriptions')
         .select(`
@@ -245,14 +216,11 @@ export const ProductManagementDashboard: React.FC = () => {
         .eq('status', 'active')
         .lte('next_service_due', nextMonth.toISOString().split('T')[0])
         .order('next_service_due', { ascending: true });
-
       if (error) throw error;
-
       const formattedServicesDue = data?.map(item => {
         const customerProduct = Array.isArray(item.customer_products) ? item.customer_products[0] : item.customer_products;
         const customer = Array.isArray(customerProduct.customer) ? customerProduct.customer[0] : customerProduct.customer;
         const product = Array.isArray(customerProduct.product) ? customerProduct.product[0] : customerProduct.product;
-
         return {
           id: item.id,
           next_service_due: item.next_service_due,
@@ -264,13 +232,11 @@ export const ProductManagementDashboard: React.FC = () => {
           address: customer.address,
         };
       }) || [];
-
       setServicesDue(formattedServicesDue);
     } catch (error) {
       console.error('Error loading services due:', error);
     }
   };
-
   const StatCard: React.FC<{ title: string; value: string | number; subtitle?: string; color?: string }> = ({ 
     title, 
     value, 
@@ -292,7 +258,6 @@ export const ProductManagementDashboard: React.FC = () => {
       </div>
     </Card>
   );
-
   const renderDashboard = () => (
     <div className="space-y-6">
       {/* Stats Grid */}
@@ -334,7 +299,6 @@ export const ProductManagementDashboard: React.FC = () => {
           color="yellow"
         />
       </div>
-
       {/* Services Due Today */}
       <Card>
         <div className="p-6">
@@ -362,7 +326,6 @@ export const ProductManagementDashboard: React.FC = () => {
           )}
         </div>
       </Card>
-
       {/* Recent Products */}
       <Card>
         <div className="p-6">
@@ -436,7 +399,6 @@ export const ProductManagementDashboard: React.FC = () => {
       </Card>
     </div>
   );
-
   if (isLoading) {
     return (
       <div className="flex items-center justify-center h-64">
@@ -444,14 +406,12 @@ export const ProductManagementDashboard: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Product Management</h1>
         <p className="text-gray-600">Manage customer products, registrations, and subscriptions</p>
       </div>
-
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
@@ -497,7 +457,6 @@ export const ProductManagementDashboard: React.FC = () => {
           </button>
         </nav>
       </div>
-
       {/* Tab Content */}
       {activeTab === 'dashboard' && renderDashboard()}
       {activeTab === 'register' && <ProductRegistrationForm />}

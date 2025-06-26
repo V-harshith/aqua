@@ -4,7 +4,7 @@ import type { NextRequest } from 'next/server';
 // SECURE MIDDLEWARE - PROTECTS ROUTES & PREVENTS REDIRECT LOOPS
 export async function middleware(request: NextRequest) {
   const { pathname } = request.nextUrl;
-  
+
   // Skip middleware for static files and API routes
   if (
     pathname.includes('/_next/') ||
@@ -16,10 +16,7 @@ export async function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
-  console.log('🛡️ Middleware checking:', pathname);
-
-  // For now, allow all requests while we fix auth issues
-  // TODO: Re-enable full auth checking once Supabase issues are resolved
+  // Allow all requests - authentication is handled by individual page components
   return NextResponse.next();
 }
 

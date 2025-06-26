@@ -7,7 +7,6 @@ export interface PumpData {
   totalRunTime: number;
   maintenanceScheduled?: string;
 }
-
 export interface SystemLog {
   id: string;
   timestamp: string;
@@ -16,11 +15,9 @@ export interface SystemLog {
   user: string;
   details: string;
 }
-
 class DataService {
   private static PUMPS_KEY = 'aqua_pumps_data';
   private static LOGS_KEY = 'aqua_system_logs';
-
   // Initialize default pump data
   private defaultPumps: PumpData[] = [
     {
@@ -51,7 +48,6 @@ class DataService {
       maintenanceScheduled: '2024-01-30'
     }
   ];
-
   // Get all pumps
   getPumps(): PumpData[] {
     try {
@@ -67,7 +63,6 @@ class DataService {
       return this.defaultPumps;
     }
   }
-
   // Save pumps to localStorage
   private savePumps(pumps: PumpData[]): void {
     try {
@@ -76,26 +71,20 @@ class DataService {
       console.error('Error saving pumps:', error);
     }
   }
-
   // Update pump status
   updatePumpStatus(pumpId: string, status: 'running' | 'stopped' | 'maintenance', user: string): PumpData | null {
     try {
       const pumps = this.getPumps();
       const pumpIndex = pumps.findIndex(p => p.id === pumpId);
-      
       if (pumpIndex === -1) return null;
-
       const oldStatus = pumps[pumpIndex].status;
       pumps[pumpIndex].status = status;
       pumps[pumpIndex].lastChecked = new Date().toLocaleString('hi-IN');
-      
       // Update run time if pump is being started
       if (status === 'running' && oldStatus !== 'running') {
         pumps[pumpIndex].totalRunTime += 1; // Add 1 hour for demo
       }
-
       this.savePumps(pumps);
-      
       // Log the action
       this.addLog({
         id: Date.now().toString(),
@@ -105,14 +94,12 @@ class DataService {
         user,
         details: `पंप स्थिति बदली: ${oldStatus} → ${status} / Status changed: ${oldStatus} → ${status}`
       });
-
       return pumps[pumpIndex];
     } catch (error) {
       console.error('Error updating pump:', error);
       return null;
     }
   }
-
   // Get system logs
   getLogs(): SystemLog[] {
     try {
@@ -123,24 +110,20 @@ class DataService {
       return [];
     }
   }
-
   // Add new log entry
   addLog(log: SystemLog): void {
     try {
       const logs = this.getLogs();
       logs.unshift(log); // Add to beginning
-      
       // Keep only last 100 logs
       if (logs.length > 100) {
         logs.splice(100);
       }
-      
       localStorage.setItem(DataService.LOGS_KEY, JSON.stringify(logs));
     } catch (error) {
       console.error('Error adding log:', error);
     }
   }
-
   // Start all pumps
   startAllPumps(user: string): PumpData[] {
     const pumps = this.getPumps();
@@ -155,7 +138,6 @@ class DataService {
       }
       return pump;
     });
-    
     this.savePumps(updatedPumps);
     this.addLog({
       id: Date.now().toString(),
@@ -165,10 +147,8 @@ class DataService {
       user,
       details: 'सभी उपलब्ध पंप चालू किए गए / All available pumps started'
     });
-    
     return updatedPumps;
   }
-
   // Stop all pumps
   stopAllPumps(user: string): PumpData[] {
     const pumps = this.getPumps();
@@ -177,7 +157,6 @@ class DataService {
       status: pump.status === 'maintenance' ? 'maintenance' as const : 'stopped' as const,
       lastChecked: new Date().toLocaleString('hi-IN')
     }));
-    
     this.savePumps(updatedPumps);
     this.addLog({
       id: Date.now().toString(),
@@ -187,10 +166,8 @@ class DataService {
       user,
       details: 'सभी पंप बंद किए गए / All pumps stopped'
     });
-    
     return updatedPumps;
   }
-
   // Get system statistics
   getStats(): {
     totalPumps: number;
@@ -202,7 +179,6 @@ class DataService {
   } {
     const pumps = this.getPumps();
     const logs = this.getLogs();
-    
     return {
       totalPumps: pumps.length,
       runningPumps: pumps.filter(p => p.status === 'running').length,
@@ -212,13 +188,11 @@ class DataService {
       lastActivity: logs[0]?.timestamp || 'कोई गतिविधि नहीं / No activity'
     };
   }
-
   // Clear all data (for testing)
   clearAllData(): void {
     localStorage.removeItem(DataService.PUMPS_KEY);
     localStorage.removeItem(DataService.LOGS_KEY);
   }
-
   // Export data for backup
   exportData(): { pumps: PumpData[]; logs: SystemLog[] } {
     return {
@@ -227,5 +201,4 @@ class DataService {
     };
   }
 }
-
 export const dataService = new DataService(); 

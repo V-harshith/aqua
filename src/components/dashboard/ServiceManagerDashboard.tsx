@@ -41,7 +41,7 @@ interface TechnicianInfo {
 export const ServiceManagerDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
+
   const [activeTab, setActiveTab] = useState<'overview' | 'services' | 'technicians'>('overview');
   const [stats, setStats] = useState<ServiceStats>({
     totalServices: 0,
@@ -51,7 +51,7 @@ export const ServiceManagerDashboard: React.FC = () => {
     emergencyRequests: 0,
     avgServiceRating: 4.5,
   });
-  
+
   const [services, setServices] = useState<ServiceRequest[]>([]);
   const [technicians, setTechnicians] = useState<TechnicianInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -83,14 +83,14 @@ export const ServiceManagerDashboard: React.FC = () => {
   const loadServiceStats = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
+
       // Fetch services data
       const servicesResponse = await fetch('/api/services');
       if (servicesResponse.ok) {
         const servicesData = await servicesResponse.json();
         const allServices = servicesData.services || [];
         setServices(allServices);
-        
+
         // Calculate real-time stats
         const pending = allServices.filter((s: ServiceRequest) => s.status === 'pending').length;
         const inProgress = allServices.filter((s: ServiceRequest) => s.status === 'in_progress').length;
@@ -99,7 +99,7 @@ export const ServiceManagerDashboard: React.FC = () => {
           s.status === 'completed' && 
           s.created_at.startsWith(today)
         ).length;
-        
+
         setStats({
           totalServices: allServices.length,
           pendingServices: pending,
@@ -109,19 +109,14 @@ export const ServiceManagerDashboard: React.FC = () => {
           avgServiceRating: 4.5
         });
       }
-      
+
       // Fetch technicians data
       const techniciansResponse = await fetch('/api/technicians');
       if (techniciansResponse.ok) {
         const techData = await techniciansResponse.json();
         setTechnicians(techData.technicians || []);
       }
-      
-      console.log('✅ Service Manager data loaded:', { 
-        services: services.length, 
-        technicians: technicians.length 
-      });
-      
+
     } catch (error) {
       console.error('Error loading service manager data:', error);
       showError({ title: 'Error', message: 'Failed to load dashboard data' });
@@ -250,35 +245,35 @@ export const ServiceManagerDashboard: React.FC = () => {
             <div className="text-sm text-gray-600">Total Services</div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-yellow-600">{stats.pendingServices}</div>
             <div className="text-sm text-gray-600">Pending</div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-purple-600">{stats.inProgressServices}</div>
             <div className="text-sm text-gray-600">In Progress</div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-green-600">{stats.completedToday}</div>
             <div className="text-sm text-gray-600">Completed Today</div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-red-600">{stats.emergencyRequests}</div>
             <div className="text-sm text-gray-600">Emergency</div>
           </div>
         </Card>
-        
+
         <Card className="p-6">
           <div className="text-center">
             <div className="text-2xl font-bold text-indigo-600">⭐ {stats.avgServiceRating}/5</div>
@@ -384,7 +379,7 @@ export const ServiceManagerDashboard: React.FC = () => {
                       </div>
                     </div>
                   ))}
-                  
+
                   {services.filter(s => ['emergency', 'high'].includes(s.priority) && s.status === 'pending').length === 0 && (
                     <div className="text-center py-8">
                       <div className="text-4xl mb-2">✅</div>
@@ -409,7 +404,7 @@ export const ServiceManagerDashboard: React.FC = () => {
                   👥 Assign Services
                 </Button>
               </div>
-              
+
               <div className="space-y-4">
                 {services.length > 0 ? (
                   services.map((service) => (
@@ -425,27 +420,27 @@ export const ServiceManagerDashboard: React.FC = () => {
                               {service.priority.toUpperCase()} PRIORITY
                             </span>
                           </div>
-                          
+
                           {service.description && (
                             <p className="text-gray-600 mb-3">{service.description}</p>
                           )}
-                          
+
                           <div className="grid grid-cols-1 md:grid-cols-4 gap-4 text-sm">
                             <div>
                               <span className="font-medium text-gray-700">Service #:</span>
                               <p className="text-gray-600">{service.service_number}</p>
                             </div>
-                            
+
                             <div>
                               <span className="font-medium text-gray-700">Customer:</span>
                               <p className="text-gray-600">{service.customer_name}</p>
                             </div>
-                            
+
                             <div>
                               <span className="font-medium text-gray-700">Created:</span>
                               <p className="text-gray-600">{formatDate(service.created_at)}</p>
                             </div>
-                            
+
                             {service.estimated_cost && (
                               <div>
                                 <span className="font-medium text-gray-700">Est. Cost:</span>
@@ -454,7 +449,7 @@ export const ServiceManagerDashboard: React.FC = () => {
                             )}
                           </div>
                         </div>
-                        
+
                         <div className="ml-4 flex flex-col space-y-2">
                           {service.status === 'pending' && (
                             <Button
@@ -499,7 +494,7 @@ export const ServiceManagerDashboard: React.FC = () => {
                   👥 Manage All
                 </Button>
               </div>
-              
+
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
                 {technicians.length > 0 ? (
                   technicians.map((tech) => (

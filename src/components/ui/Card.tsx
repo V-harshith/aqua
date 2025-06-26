@@ -1,5 +1,4 @@
 import { ReactNode } from 'react';
-
 interface CardProps {
   children: ReactNode;
   className?: string;
@@ -8,7 +7,6 @@ interface CardProps {
   footer?: ReactNode;
   headerAction?: ReactNode;
 }
-
 export function Card({
   children,
   className = '',
@@ -35,7 +33,6 @@ export function Card({
     </div>
   );
 }
-
 // Card subcomponents for more complex layouts
 export function CardHeader({
   children,
@@ -46,7 +43,6 @@ export function CardHeader({
 }) {
   return <div className={`border-b border-gray-200 px-6 py-4 ${className}`}>{children}</div>;
 }
-
 export function CardContent({
   children,
   className = '',
@@ -56,7 +52,6 @@ export function CardContent({
 }) {
   return <div className={`px-6 py-5 ${className}`}>{children}</div>;
 }
-
 export function CardFooter({
   children,
   className = '',

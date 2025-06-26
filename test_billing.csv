@@ -1,4 +1,0 @@
-id,customer_name,email,billing_address,account_status,monthly_charge,last_payment,payment_method,created_at
-"ae556bfc-3d56-4163-9e8d-b75621c30673","vercel vercel","harshithrao124@gmail.com","Not provided","Active","125","2025-06-11","Bank Transfer","2025-06-21T08:41:08.941108+00:00"
-"121ada0c-ee37-422b-90d5-79ff4dffb6c8","testing ","testin@gmail.com","Not provided","Active","67","2025-05-31","Bank Transfer","2025-06-21T11:08:41.845146+00:00"
-"32bd4da1-eaef-4376-9423-d267c7d76deb","harshith rao","freakoffitnessig@gmail.com","Not provided","Active","71","2025-06-17","Bank Transfer","2025-06-18T11:25:52.513128+00:00"

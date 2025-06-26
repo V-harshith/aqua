@@ -1,12 +1,9 @@
 import { createClient } from '@supabase/supabase-js';
-
 export const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
 export const supabaseAnonKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
-
 if (!supabaseUrl || !supabaseAnonKey) {
   throw new Error('Missing Supabase environment variables');
 }
-
 // Database types
 export type UserRole = 
   | 'admin'
@@ -18,7 +15,6 @@ export type UserRole =
   | 'dispatcher'
   | 'technician'
   | 'customer';
-
 export type ComplaintStatus = 
   | 'open'
   | 'assigned' 
@@ -26,11 +22,9 @@ export type ComplaintStatus =
   | 'resolved'
   | 'closed'
   | 'cancelled';
-
 export type ComplaintPriority = 'low' | 'medium' | 'high' | 'critical';
 export type ServiceStatus = 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
 // Payment types removed - not needed for water management system
-
 // Database interfaces
 export interface User {
   id: string;
@@ -45,7 +39,6 @@ export interface User {
   created_at: string;
   updated_at: string;
 }
-
 export interface Customer {
   id: string;
   user_id?: string;
@@ -61,7 +54,6 @@ export interface Customer {
   created_at: string;
   updated_at: string;
 }
-
 export interface Product {
   id: string;
   name: string;
@@ -73,7 +65,6 @@ export interface Product {
   created_at: string;
   updated_at: string;
 }
-
 export interface Complaint {
   id: string;
   complaint_number: string;
@@ -93,7 +84,6 @@ export interface Complaint {
   customer?: Customer;
   assigned_user?: User;
 }
-
 export interface Service {
   id: string;
   service_number: string;
@@ -115,9 +105,7 @@ export interface Service {
   technician?: User;
   complaint?: Complaint;
 }
-
 // Invoice and Payment interfaces removed - not needed for water management system
-
 // Database schema type
 export interface Database {
   public: {
@@ -171,7 +159,6 @@ export interface Database {
     };
   };
 }
-
 export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
   auth: {
     flowType: 'pkce',
@@ -180,18 +167,15 @@ export const supabase = createClient<Database>(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: true,
   },
 });
-
 // Utility functions for the water management system
 export const waterAPI = {
   // Users
   async getUser(id: string) {
     return supabase.from('users').select('*').eq('id', id).single();
   },
-
   async getUsersByRole(role: UserRole) {
     return supabase.from('users').select('*').eq('role', role).eq('is_active', true);
   },
-
   // Customers
   async getCustomers() {
     return supabase.from('customers').select(`
@@ -199,14 +183,12 @@ export const waterAPI = {
       user:users(*)
     `);
   },
-
   async getCustomer(id: string) {
     return supabase.from('customers').select(`
       *,
       user:users(*)
     `).eq('id', id).single();
   },
-
   // Complaints
   async getComplaints() {
     return supabase.from('complaints').select(`
@@ -215,7 +197,6 @@ export const waterAPI = {
       assigned_user:users(*)
     `).order('created_at', { ascending: false });
   },
-
   async getComplaintsByStatus(status: ComplaintStatus) {
     return supabase.from('complaints').select(`
       *,
@@ -223,14 +204,12 @@ export const waterAPI = {
       assigned_user:users(*)
     `).eq('status', status).order('created_at', { ascending: false });
   },
-
   async getComplaintsByUser(userId: string) {
     return supabase.from('complaints').select(`
       *,
       customer:customers(*)
     `).eq('assigned_to', userId).order('created_at', { ascending: false });
   },
-
   // Services
   async getServices() {
     return supabase.from('services').select(`
@@ -240,7 +219,6 @@ export const waterAPI = {
       complaint:complaints(*)
     `).order('created_at', { ascending: false });
   },
-
   async getServicesByTechnician(technicianId: string) {
     return supabase.from('services').select(`
       *,
@@ -248,15 +226,12 @@ export const waterAPI = {
       complaint:complaints(*)
     `).eq('assigned_technician', technicianId).order('created_at', { ascending: false });
   },
-
   // Invoices
   // Invoice-related functions removed
-
   // Products
   async getProducts() {
     return supabase.from('products').select('*').eq('is_active', true);
   },
-
   // Dashboard stats
   async getDashboardStats() {
     const [complaints, services, customers] = await Promise.all([
@@ -264,7 +239,6 @@ export const waterAPI = {
       supabase.from('services').select('status'),
       supabase.from('customers').select('status')
     ]);
-
     return {
       complaints: complaints.data || [],
       services: services.data || [],

@@ -1,11 +1,9 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-
 interface ServiceRequest {
   id: string;
   request_number: string;
@@ -21,13 +19,11 @@ interface ServiceRequest {
     last_name: string;
   };
 }
-
 interface Technician {
   id: string;
   full_name: string;
   phone: string;
 }
-
 export const ServiceAssignmentWorkflow: React.FC = () => {
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -39,11 +35,9 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
     scheduled_date: '',
     notes: ''
   });
-
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -63,9 +57,7 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
         `)
         .eq('status', 'open')
         .order('priority', { ascending: false });
-
       if (requestsError) throw requestsError;
-
       // Transform complaints to service requests format
       const transformedRequests = requests?.map(req => ({
         id: req.id,
@@ -82,26 +74,21 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
           last_name: ''
         }
       })) || [];
-
       setServiceRequests(transformedRequests);
-
       // Load technicians
       const { data: techData, error: techError } = await supabase
         .from('users')
         .select('id, full_name, phone')
         .eq('role', 'technician')
         .eq('is_active', true);
-
       if (techError) throw techError;
       setTechnicians(techData || []);
-
     } catch (error) {
       console.error('Error loading data:', error);
     } finally {
       setIsLoading(false);
     }
   };
-
   const handleAssignService = (request: ServiceRequest) => {
     setSelectedRequest(request);
     setShowAssignForm(true);
@@ -111,12 +98,10 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
       notes: ''
     });
   };
-
   const submitAssignment = async () => {
     if (!selectedRequest || !assignmentForm.technician_id) {
       return;
     }
-
     setIsLoading(true);
     try {
       // Update complaint status to assigned
@@ -127,20 +112,16 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
           assigned_to: assignmentForm.technician_id
         })
         .eq('id', selectedRequest.id);
-
       if (updateError) throw updateError;
-
       setShowAssignForm(false);
       setSelectedRequest(null);
       await loadData();
-
     } catch (error) {
       console.error('Error assigning service:', error);
     } finally {
       setIsLoading(false);
     }
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority?.toLowerCase()) {
       case 'low': return 'bg-green-100 text-green-800';
@@ -150,14 +131,12 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Service Assignment</h1>
         <p className="text-gray-600 mt-1">Assign technicians to service requests</p>
       </div>
-
       <div className="space-y-4">
         {serviceRequests.length === 0 ? (
           <Card>
@@ -179,7 +158,6 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
                         {request.priority?.toUpperCase() || 'MEDIUM'}
                       </span>
                     </div>
-                    
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                       <div>
                         <p className="text-sm text-gray-600">
@@ -195,14 +173,12 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
                         </p>
                       </div>
                     </div>
-                    
                     <div className="mb-4">
                       <p className="text-sm text-gray-600">
                         <span className="font-medium">Description:</span> {request.problem_description}
                       </p>
                     </div>
                   </div>
-                  
                   <div className="ml-4">
                     <Button
                       onClick={() => handleAssignService(request)}
@@ -217,13 +193,11 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
           ))
         )}
       </div>
-
       {/* Assignment Modal */}
       {showAssignForm && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-md w-full m-4">
             <h3 className="text-xl font-bold mb-4">Assign Technician</h3>
-            
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -233,7 +207,6 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
                   {selectedRequest.request_number}
                 </p>
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Technician *
@@ -252,7 +225,6 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
                   ))}
                 </select>
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Scheduled Date
@@ -264,7 +236,6 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-              
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Notes
@@ -278,7 +249,6 @@ export const ServiceAssignmentWorkflow: React.FC = () => {
                 />
               </div>
             </div>
-            
             <div className="flex justify-end space-x-3 mt-6">
               <Button
                 onClick={() => {

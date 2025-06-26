@@ -1,8 +1,6 @@
 'use client';
-
 import { Suspense } from 'react';
 import UpdatePasswordContent from './UpdatePasswordContent';
-
 export default function UpdatePasswordPage() {
   return (
     <Suspense fallback={

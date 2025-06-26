@@ -1,12 +1,10 @@
 'use client';
-
 import React, { useState } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/useToast';
 import { Card } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
 import Input from '@/components/ui/Input';
-
 export default function ReportsPage() {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
@@ -16,7 +14,6 @@ export default function ReportsPage() {
     endDate: ''
   });
   const [isGenerating, setIsGenerating] = useState(false);
-
   const reportTypes = [
     {
       id: 'customer-summary',
@@ -67,43 +64,34 @@ export default function ReportsPage() {
       icon: '📈'
     }
   ];
-
   const generateReport = async () => {
     if (!selectedReport) {
       showError({ title: 'Please select a report type' });
       return;
     }
-
     if (!dateRange.startDate || !dateRange.endDate) {
       showError({ title: 'Please select date range' });
       return;
     }
-
     setIsGenerating(true);
     try {
       // Mock report generation
       await new Promise(resolve => setTimeout(resolve, 2000));
-      
       showSuccess({ title: 'Report generated successfully' });
-      
       // Mock download
       const reportName = reportTypes.find(r => r.id === selectedReport)?.name || 'Report';
-      console.log(`Generated ${reportName} from ${dateRange.startDate} to ${dateRange.endDate}`);
-      
     } catch (error) {
       showError({ title: 'Failed to generate report' });
     } finally {
       setIsGenerating(false);
     }
   };
-
   const quickReports = [
     { name: 'Today\'s Summary', period: 'today' },
     { name: 'This Week', period: 'week' },
     { name: 'This Month', period: 'month' },
     { name: 'Last Quarter', period: 'quarter' }
   ];
-
   const generateQuickReport = async (period: string) => {
     setIsGenerating(true);
     try {
@@ -115,7 +103,6 @@ export default function ReportsPage() {
       setIsGenerating(false);
     }
   };
-
   return (
     <div className="p-6 space-y-6">
       {/* Header */}
@@ -125,7 +112,6 @@ export default function ReportsPage() {
           <p className="text-gray-600">Generate comprehensive business reports and analytics</p>
         </div>
       </div>
-
       {/* Quick Reports */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Reports</h3>
@@ -143,7 +129,6 @@ export default function ReportsPage() {
           ))}
         </div>
       </Card>
-
       {/* Custom Report Generation */}
       <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
         {/* Report Type Selection */}
@@ -174,11 +159,9 @@ export default function ReportsPage() {
             ))}
           </div>
         </Card>
-
         {/* Date Range & Generation */}
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-900 mb-4">Report Configuration</h3>
-          
           {selectedReport && (
             <div className="space-y-4">
               <div>
@@ -196,7 +179,6 @@ export default function ReportsPage() {
                   </div>
                 </div>
               </div>
-
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -219,7 +201,6 @@ export default function ReportsPage() {
                   />
                 </div>
               </div>
-
               <div className="space-y-3">
                 <h4 className="font-medium text-gray-900">Export Options</h4>
                 <div className="flex space-x-3">
@@ -242,7 +223,6 @@ export default function ReportsPage() {
               </div>
             </div>
           )}
-
           {!selectedReport && (
             <div className="text-center py-8">
               <div className="text-gray-400 text-4xl mb-2">📋</div>
@@ -251,7 +231,6 @@ export default function ReportsPage() {
           )}
         </Card>
       </div>
-
       {/* Recent Reports */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Recent Reports</h3>
@@ -286,7 +265,6 @@ export default function ReportsPage() {
           ))}
         </div>
       </Card>
-
       {/* Report Scheduling */}
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Scheduled Reports</h3>

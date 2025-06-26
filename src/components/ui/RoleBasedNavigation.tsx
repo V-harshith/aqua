@@ -225,7 +225,7 @@ export function SidebarNavigation() {
             <p className="text-xs text-gray-500 truncate">{userProfile.email}</p>
           </div>
         </div>
-        
+
         <button
           onClick={() => signOut()}
           className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200"
@@ -292,7 +292,7 @@ export function HeaderNavigation() {
                     {userProfile.role.replace('_', ' ')}
                   </p>
                 </div>
-                
+
                 {/* Mobile Navigation */}
                 <div className="md:hidden">
                   <RoleBasedNavigation 
@@ -302,7 +302,7 @@ export function HeaderNavigation() {
                     showDescriptions={false}
                   />
                 </div>
-                
+
                 <div className="border-t border-gray-200 mt-2">
                   <button
                     onClick={() => {

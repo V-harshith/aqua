@@ -1,5 +1,4 @@
 'use client';
-
 import { useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { RoleGuard } from '@/components/auth/RoleGuard';
@@ -7,25 +6,20 @@ import ComplaintForm from '@/components/complaints/ComplaintForm';
 import ComplaintsList from '@/components/complaints/ComplaintsList';
 import Button from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
-
 export default function ComplaintsPage() {
   const { userProfile, canManageComplaints } = useAuthContext();
   const [showForm, setShowForm] = useState(false);
   const [refreshKey, setRefreshKey] = useState(0);
-
   const handleFormSuccess = () => {
     setShowForm(false);
     setRefreshKey(prev => prev + 1); // Trigger refresh of complaints list
   };
-
   const handleSubmit = async () => {
     // Handle form submission
     handleFormSuccess();
   };
-
   const isCustomer = userProfile?.role === 'customer';
   const isStaff = canManageComplaints();
-
   return (
     <RoleGuard 
       allowedRoles={['admin', 'dept_head', 'service_manager', 'technician', 'customer']}
@@ -58,7 +52,6 @@ export default function ComplaintsPage() {
                   }
                 </p>
               </div>
-              
               {/* Action Buttons */}
               <div className="flex gap-3">
                 {isCustomer && (
@@ -72,7 +65,6 @@ export default function ComplaintsPage() {
               </div>
             </div>
           </div>
-
           {/* Content */}
           <div className="space-y-8">
             {/* Complaint Form (for customers or when staff needs to add) */}
@@ -87,7 +79,6 @@ export default function ComplaintsPage() {
                 </Card>
               </div>
             )}
-
             {/* Complaints List */}
             {!showForm && (
               <div>
@@ -102,7 +93,6 @@ export default function ComplaintsPage() {
                     }
                   </p>
                 </div>
-                
                 <ComplaintsList 
                   key={refreshKey}
                   showActions={isStaff}
@@ -110,7 +100,6 @@ export default function ComplaintsPage() {
               </div>
             )}
           </div>
-
           {/* Quick Stats for Staff */}
           {isStaff && !showForm && (
             <div className="mt-12 grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -125,7 +114,6 @@ export default function ComplaintsPage() {
                   </div>
                 </div>
               </div>
-              
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-purple-100 text-purple-600">
@@ -137,7 +125,6 @@ export default function ComplaintsPage() {
                   </div>
                 </div>
               </div>
-              
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-orange-100 text-orange-600">
@@ -149,7 +136,6 @@ export default function ComplaintsPage() {
                   </div>
                 </div>
               </div>
-              
               <div className="bg-white rounded-lg shadow p-6">
                 <div className="flex items-center">
                   <div className="p-3 rounded-full bg-green-100 text-green-600">

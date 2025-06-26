@@ -1,31 +1,24 @@
 'use client';
-
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
 import Button from '@/components/ui/Button';
-
 function AccessDeniedContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
   const { userProfile, signOut } = useAuthContext();
-  
   const error = searchParams.get('error');
   const requiredRole = searchParams.get('required_role');
-
   const handleGoBack = () => {
     router.back();
   };
-
   const handleGoHome = () => {
     router.push('/');
   };
-
   const handleSignOut = async () => {
     await signOut();
     router.push('/signin');
   };
-
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">
       <div className="max-w-md w-full bg-white shadow-lg rounded-lg p-8">
@@ -46,12 +39,10 @@ function AccessDeniedContent() {
               />
             </svg>
           </div>
-
           {/* Title */}
           <h1 className="text-2xl font-bold text-gray-900 mb-2">
             Access Denied
           </h1>
-
           {/* Message */}
           <p className="text-gray-600 mb-6">
             {error === 'insufficient_permissions' 
@@ -59,7 +50,6 @@ function AccessDeniedContent() {
               : "You are not authorized to view this content."
             }
           </p>
-
           {/* User Info */}
           {userProfile && (
             <div className="bg-gray-50 rounded-lg p-4 mb-6">
@@ -77,7 +67,6 @@ function AccessDeniedContent() {
               )}
             </div>
           )}
-
           {/* Actions */}
           <div className="space-y-3">
             <Button
@@ -87,7 +76,6 @@ function AccessDeniedContent() {
             >
               Go Back
             </Button>
-            
             <Button
               onClick={handleGoHome}
               variant="secondary"
@@ -95,7 +83,6 @@ function AccessDeniedContent() {
             >
               Go to Home
             </Button>
-
             {userProfile && (
               <Button
                 onClick={handleSignOut}
@@ -106,7 +93,6 @@ function AccessDeniedContent() {
               </Button>
             )}
           </div>
-
           {/* Help Text */}
           <div className="mt-8 pt-6 border-t border-gray-200">
             <p className="text-sm text-gray-500">
@@ -118,7 +104,6 @@ function AccessDeniedContent() {
     </div>
   );
 }
-
 export default function AccessDenied() {
   return (
     <Suspense fallback={

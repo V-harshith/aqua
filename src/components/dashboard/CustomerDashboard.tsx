@@ -65,11 +65,10 @@ export function CustomerDashboard() {
 
   const loadCustomerData = async () => {
     if (!userProfile?.id) return;
-    
+
     try {
       setIsLoading(true);
-      console.log('🔄 Loading real-time customer dashboard data...');
-      
+
       // Fetch real data from APIs in parallel
       const [servicesResponse, complaintsResponse, statsResponse] = await Promise.all([
         fetch(`/api/services?customer_id=${userProfile.id}`, { 
@@ -94,7 +93,7 @@ export function CustomerDashboard() {
         console.warn('Services API not available, using empty array');
         setServiceRequests([]);
       }
-      
+
       // Handle complaints
       if (complaintsResponse.ok) {
         const complaintsData = await complaintsResponse.json();
@@ -103,7 +102,7 @@ export function CustomerDashboard() {
         console.warn('Complaints API not available, using empty array');
         setComplaints([]);
       }
-      
+
       // Handle stats
       if (statsResponse.ok) {
         const statsData = await statsResponse.json();
@@ -122,16 +121,14 @@ export function CustomerDashboard() {
           totalSpent: 0
         });
       }
-      
-      console.log('✅ Real-time customer data loaded successfully');
-      
+
     } catch (err: any) {
       console.error('❌ Error loading customer dashboard:', err);
       showError({ 
         title: 'Failed to load dashboard', 
         message: 'Unable to fetch real-time data. Please check your connection and try again.' 
       });
-      
+
       // Set empty states on error
       setServiceRequests([]);
       setComplaints([]);

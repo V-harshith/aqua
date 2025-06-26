@@ -1,22 +1,18 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../hooks/useAuth';
 import { useToast } from '../hooks/useToast';
 import { dataService, PumpData } from '../services/dataService';
 import Button from './ui/Button';
-
 const Dashboard: React.FC = () => {
   const { user, signOut } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
   const [pumps, setPumps] = useState<PumpData[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-
   // Load pumps on component mount
   useEffect(() => {
     loadPumps();
   }, []);
-
   const loadPumps = () => {
     try {
       const pumpData = dataService.getPumps();
@@ -27,7 +23,6 @@ const Dashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'running': return 'bg-green-500';
@@ -36,7 +31,6 @@ const Dashboard: React.FC = () => {
       default: return 'bg-gray-500';
     }
   };
-
   const getStatusIcon = (status: string) => {
     switch (status) {
       case 'running': return '🟢';
@@ -45,7 +39,6 @@ const Dashboard: React.FC = () => {
       default: return '⚫';
     }
   };
-
   const getStatusText = (status: string) => {
     switch (status) {
       case 'running': return 'चालू / Running';
@@ -54,14 +47,11 @@ const Dashboard: React.FC = () => {
       default: return 'अज्ञात / Unknown';
     }
   };
-
   const togglePump = async (pumpId: string) => {
     const pump = pumps.find(p => p.id === pumpId);
     if (!pump) return;
-
     const newStatus = pump.status === 'running' ? 'stopped' : 'running';
     const userEmail = user?.email || 'Unknown User';
-    
     try {
       const updatedPump = dataService.updatePumpStatus(pumpId, newStatus, userEmail);
       if (updatedPump) {
@@ -76,7 +66,6 @@ const Dashboard: React.FC = () => {
       showError({ title: 'पंप कंट्रोल में समस्या / Pump control error' });
     }
   };
-
   const handleStartAll = async () => {
     try {
       const userEmail = user?.email || 'Unknown User';
@@ -87,7 +76,6 @@ const Dashboard: React.FC = () => {
       showError({ title: 'सभी पंप चालू नहीं हो सके / Failed to start all pumps' });
     }
   };
-
   const handleStopAll = async () => {
     try {
       const userEmail = user?.email || 'Unknown User';
@@ -98,7 +86,6 @@ const Dashboard: React.FC = () => {
       showError({ title: 'सभी पंप बंद नहीं हो सके / Failed to stop all pumps' });
     }
   };
-
   const handleSignOut = async () => {
     try {
       await signOut();
@@ -107,7 +94,6 @@ const Dashboard: React.FC = () => {
       showError({ title: 'लॉगआउट में समस्या / Sign out failed' });
     }
   };
-
   // Show loading screen
   if (isLoading) {
     return (
@@ -120,7 +106,6 @@ const Dashboard: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -140,7 +125,6 @@ const Dashboard: React.FC = () => {
             🚪 बाहर निकलें / Exit
           </button>
         </div>
-        
         {/* User Info */}
         <div className="mt-4 bg-blue-500/50 rounded-lg p-3">
           <p className="text-sm">
@@ -151,7 +135,6 @@ const Dashboard: React.FC = () => {
           </p>
         </div>
       </div>
-
       {/* Quick Stats */}
       <div className="p-4">
         <div className="grid grid-cols-3 gap-3 mb-6">
@@ -174,7 +157,6 @@ const Dashboard: React.FC = () => {
             <div className="text-sm">मरम्मत / Repair</div>
           </div>
         </div>
-
         {/* Total Runtime Display */}
         <div className="bg-white rounded-xl p-4 mb-6 shadow-lg border-l-4 border-blue-500">
           <div className="flex items-center justify-between">
@@ -193,13 +175,11 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Pump List */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             🚰 पंप की स्थिति / Pump Status
           </h2>
-          
           {pumps.map((pump) => (
             <div key={pump.id} className="bg-white rounded-2xl shadow-lg p-6 border-l-4 border-blue-500">
               <div className="flex items-center justify-between mb-4">
@@ -217,12 +197,10 @@ const Dashboard: React.FC = () => {
                   {getStatusText(pump.status)}
                 </div>
               </div>
-              
               <div className="flex items-center justify-between">
                 <div className="text-sm text-gray-500">
                   अंतिम जांच / Last Check: {pump.lastChecked}
                 </div>
-                
                 {pump.status !== 'maintenance' && (
                   <Button
                     onClick={() => togglePump(pump.id)}
@@ -235,7 +213,6 @@ const Dashboard: React.FC = () => {
                     {pump.status === 'running' ? '⏹️ बंद करें / Stop' : '▶️ चालू करें / Start'}
                   </Button>
                 )}
-                
                 {pump.status === 'maintenance' && (
                   <button
                     onClick={() => showError({ title: 'मरम्मत चल रही है / Under maintenance' })}
@@ -248,13 +225,11 @@ const Dashboard: React.FC = () => {
             </div>
           ))}
         </div>
-
         {/* Quick Actions */}
         <div className="mt-8 space-y-4">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             ⚡ त्वरित कार्य / Quick Actions
           </h2>
-          
           <div className="grid grid-cols-2 gap-4">
             <button
               onClick={handleStartAll}
@@ -263,7 +238,6 @@ const Dashboard: React.FC = () => {
               🟢 सभी चालू करें<br/>
               <span className="text-sm font-normal">Start All</span>
             </button>
-            
             <button
               onClick={handleStopAll}
               className="bg-red-500 hover:bg-red-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-105"
@@ -271,7 +245,6 @@ const Dashboard: React.FC = () => {
               🔴 सभी बंद करें<br/>
               <span className="text-sm font-normal">Stop All</span>
             </button>
-            
             <button
               onClick={() => window.open('tel:+919876543210')}
               className="bg-blue-500 hover:bg-blue-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-105"
@@ -279,7 +252,6 @@ const Dashboard: React.FC = () => {
               📞 मदद चाहिए<br/>
               <span className="text-sm font-normal">Need Help</span>
             </button>
-            
             <button
               onClick={() => window.location.href = '/logs'}
               className="bg-purple-500 hover:bg-purple-600 text-white py-4 rounded-xl font-bold text-lg shadow-lg transition-all transform hover:scale-105"
@@ -289,7 +261,6 @@ const Dashboard: React.FC = () => {
             </button>
           </div>
         </div>
-
         {/* Emergency Alert */}
         <div className="mt-8 bg-red-100 border-l-4 border-red-500 p-4 rounded-lg">
           <div className="flex items-center">
@@ -303,7 +274,6 @@ const Dashboard: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Data Export Option */}
         <div className="mt-6">
           <button
@@ -326,5 +296,4 @@ const Dashboard: React.FC = () => {
     </div>
   );
 };
-
 export default Dashboard; 

@@ -1,19 +1,15 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { dataService, SystemLog } from '../../services/dataService';
 import { useToast } from '../../hooks/useToast';
 import Button from '../ui/Button';
-
 export const SystemLogs: React.FC = () => {
   const [logs, setLogs] = useState<SystemLog[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const { success: showSuccess } = useToast();
-
   useEffect(() => {
     loadLogs();
   }, []);
-
   const loadLogs = () => {
     try {
       const systemLogs = dataService.getLogs();
@@ -24,7 +20,6 @@ export const SystemLogs: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const clearLogs = () => {
     if (window.confirm('क्या आप सभी लॉग्स को साफ करना चाहते हैं?\n\nAre you sure you want to clear all logs?')) {
       dataService.clearAllData();
@@ -32,21 +27,18 @@ export const SystemLogs: React.FC = () => {
       showSuccess({ title: 'सभी लॉग्स साफ किए गए / All logs cleared' });
     }
   };
-
   const getActionIcon = (action: string) => {
     if (action.includes('Start') || action.includes('running')) return '▶️';
     if (action.includes('Stop') || action.includes('stopped')) return '⏹️';
     if (action.includes('maintenance')) return '🔧';
     return '📝';
   };
-
   const getActionColor = (action: string) => {
     if (action.includes('Start') || action.includes('running')) return 'bg-green-100 border-green-300';
     if (action.includes('Stop') || action.includes('stopped')) return 'bg-red-100 border-red-300';
     if (action.includes('maintenance')) return 'bg-yellow-100 border-yellow-300';
     return 'bg-blue-100 border-blue-300';
   };
-
   if (isLoading) {
     return (
       <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 flex items-center justify-center">
@@ -58,7 +50,6 @@ export const SystemLogs: React.FC = () => {
       </div>
     );
   }
-
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100">
       {/* Header */}
@@ -82,7 +73,6 @@ export const SystemLogs: React.FC = () => {
           </div>
         </div>
       </div>
-
       <div className="p-4">
         {/* Summary Stats */}
         <div className="bg-white rounded-xl p-4 mb-6 shadow-lg">
@@ -107,7 +97,6 @@ export const SystemLogs: React.FC = () => {
             </div>
           </div>
         </div>
-
         {/* Clear Logs Button */}
         {logs.length > 0 && (
           <div className="mb-6">
@@ -119,13 +108,11 @@ export const SystemLogs: React.FC = () => {
             </Button>
           </div>
         )}
-
         {/* Logs List */}
         <div className="space-y-4">
           <h2 className="text-xl font-bold text-gray-800 mb-4">
             📋 गतिविधि इतिहास / Activity History
           </h2>
-          
           {logs.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center shadow-lg">
               <div className="text-6xl mb-4">📝</div>
@@ -153,11 +140,9 @@ export const SystemLogs: React.FC = () => {
                         Pump {log.pumpId}
                       </span>
                     </div>
-                    
                     <p className="text-sm text-gray-600 mb-2">
                       {log.details}
                     </p>
-                    
                     <div className="flex items-center justify-between text-xs text-gray-500">
                       <span>👤 {log.user}</span>
                       <span>🕐 {log.timestamp}</span>
@@ -168,7 +153,6 @@ export const SystemLogs: React.FC = () => {
             ))
           )}
         </div>
-
         {/* Export Logs */}
         {logs.length > 0 && (
           <div className="mt-8">
@@ -189,7 +173,6 @@ export const SystemLogs: React.FC = () => {
             </Button>
           </div>
         )}
-
         {/* Bottom spacing for mobile */}
         <div className="h-20"></div>
       </div>

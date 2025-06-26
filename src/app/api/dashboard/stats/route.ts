@@ -1,6 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
-
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -11,7 +10,6 @@ const supabaseAdmin = createClient(
     }
   }
 );
-
 // GET - Fetch dashboard statistics
 export async function GET(request: NextRequest) {
   try {
@@ -19,9 +17,6 @@ export async function GET(request: NextRequest) {
     const customerId = searchParams.get('customer_id');
     const technicianId = searchParams.get('technician_id');
     const userRole = searchParams.get('role');
-
-    console.log(`📊 Fetching dashboard stats for ${userRole || 'user'}: ${customerId || technicianId || 'all'}`);
-
     if (customerId) {
       // Customer-specific stats
       const [servicesResult, complaintsResult] = await Promise.all([
@@ -34,13 +29,10 @@ export async function GET(request: NextRequest) {
           .select('id, status, created_at')
           .eq('customer_id', customerId)
       ]);
-
       if (servicesResult.error) throw new Error(`Services error: ${servicesResult.error.message}`);
       if (complaintsResult.error) throw new Error(`Complaints error: ${complaintsResult.error.message}`);
-
       const services = servicesResult.data || [];
       const complaints = complaintsResult.data || [];
-
       const stats = {
         activeServices: services.filter(s => ['pending', 'assigned', 'in_progress'].includes(s.status)).length,
         completedServices: services.filter(s => s.status === 'completed').length,
@@ -50,20 +42,15 @@ export async function GET(request: NextRequest) {
         currentBill: Math.floor(Math.random() * 200) + 100, // Mock billing
         lastPayment: new Date(Date.now() - Math.random() * 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0]
       };
-
       return NextResponse.json({ stats, timestamp: new Date().toISOString() });
-
     } else if (technicianId) {
       // Technician-specific stats
       const servicesResult = await supabaseAdmin
         .from('services')
         .select('id, status, created_at, estimated_hours, actual_hours')
         .eq('assigned_technician', technicianId);
-
       if (servicesResult.error) throw new Error(`Services error: ${servicesResult.error.message}`);
-
       const services = servicesResult.data || [];
-
       const stats = {
         assignedJobs: services.filter(s => s.status === 'assigned').length,
         inProgressJobs: services.filter(s => s.status === 'in_progress').length,
@@ -71,9 +58,7 @@ export async function GET(request: NextRequest) {
         totalHours: services.reduce((sum, s) => sum + (s.actual_hours || 0), 0),
         avgRating: 4.2 + Math.random() * 0.6 // Mock rating
       };
-
       return NextResponse.json({ stats, timestamp: new Date().toISOString() });
-
     } else {
       // General/Admin stats
       const [usersResult, servicesResult, complaintsResult, customersResult] = await Promise.all([
@@ -82,17 +67,14 @@ export async function GET(request: NextRequest) {
         supabaseAdmin.from('complaints').select('id, status, created_at'),
         supabaseAdmin.from('customers').select('id, created_at')
       ]);
-
       if (usersResult.error) throw new Error(`Users error: ${usersResult.error.message}`);
       if (servicesResult.error) throw new Error(`Services error: ${servicesResult.error.message}`);
       if (complaintsResult.error) throw new Error(`Complaints error: ${complaintsResult.error.message}`);
       if (customersResult.error) throw new Error(`Customers error: ${customersResult.error.message}`);
-
       const users = usersResult.data || [];
       const services = servicesResult.data || [];
       const complaints = complaintsResult.data || [];
       const customers = customersResult.data || [];
-
       const stats = {
         totalUsers: users.length,
         activeUsers: users.filter(u => u.is_active).length,
@@ -107,10 +89,8 @@ export async function GET(request: NextRequest) {
         customerSatisfaction: 4.3 + Math.random() * 0.5, // Mock satisfaction
         responseTime: Math.floor(Math.random() * 24) + 2 // Mock response time in hours
       };
-
       return NextResponse.json({ stats, timestamp: new Date().toISOString() });
     }
-
   } catch (error: any) {
     console.error('❌ Error fetching dashboard stats:', error);
     return NextResponse.json(

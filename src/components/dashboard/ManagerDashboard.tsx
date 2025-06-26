@@ -1,16 +1,13 @@
 'use client';
-
 import { useAuthContext } from '@/context/AuthContext';
 import { RoleBasedNavigation } from '@/components/ui/RoleBasedNavigation';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
 import Button from '@/components/ui/Button';
 import Link from 'next/link';
-
 export function ManagerDashboard() {
   const { userProfile } = useAuthContext();
   const router = useRouter();
-
   const handleSignOut = async () => {
     try {
       const { error } = await supabase.auth.signOut();
@@ -20,7 +17,6 @@ export function ManagerDashboard() {
       console.error('Sign out failed:', err);
     }
   };
-
   // Role-specific stats based on manager type
   const getManagerStats = () => {
     switch (userProfile?.role) {
@@ -47,16 +43,13 @@ export function ManagerDashboard() {
         ];
     }
   };
-
   const managerStats = getManagerStats();
-
   const quickActions = [
     { label: 'Team Management', href: '/team', icon: '👥', color: 'blue' },
     { label: 'Department Reports', href: '/reports/department', icon: '📊', color: 'green' },
     { label: 'Budget Planning', href: '/budget', icon: '💰', color: 'purple' },
     { label: 'Performance Review', href: '/performance', icon: '📈', color: 'yellow' }
   ];
-
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -80,7 +73,6 @@ export function ManagerDashboard() {
           </div>
         </div>
       </div>
-
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         {managerStats.map((stat, index) => (
@@ -98,7 +90,6 @@ export function ManagerDashboard() {
           </div>
         ))}
       </div>
-
       {/* Navigation */}
       <div className="bg-white rounded-lg shadow p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Management Tools</h3>

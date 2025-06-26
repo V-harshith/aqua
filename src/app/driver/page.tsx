@@ -1,6 +1,5 @@
 import { DriverDashboard } from '../../components/driver/DriverDashboard';
 import { RoleGuard } from '../../components/auth/RoleGuard';
-
 export default function DriverPage() {
   return (
     <RoleGuard allowedRoles={['driver_manager', 'admin', 'dept_head']}>

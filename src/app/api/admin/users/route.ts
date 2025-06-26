@@ -67,14 +67,12 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
     }
 
-    console.log('Creating user:', { email, full_name, role });
-
     // Check if user already exists by email in both auth and users table
     const { data: existingAuthUser } = await supabaseAdmin.auth.admin.listUsers();
     const emailExistsInAuth = existingAuthUser?.users?.some(u => u.email === email);
-    
+
     if (emailExistsInAuth) {
-      console.log('Auth user already exists with email:', email);
+
       return NextResponse.json({ error: 'A user with this email already exists' }, { status: 400 });
     }
 
@@ -85,7 +83,7 @@ export async function POST(request: NextRequest) {
       .maybeSingle();
 
     if (existingUser) {
-      console.log('User already exists in users table with email:', email);
+
       return NextResponse.json({ error: 'A user with this email already exists' }, { status: 400 });
     }
 
@@ -113,11 +111,9 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ error: 'Failed to create user account' }, { status: 500 });
     }
 
-    console.log('Auth user created with ID:', authData.user.id);
-
     // Wait a moment for the trigger to execute, then fetch the created profile
     await new Promise(resolve => setTimeout(resolve, 500));
-    
+
     const { data: profileData, error: profileError } = await supabaseAdmin
       .from('users')
       .select('*')
@@ -126,7 +122,7 @@ export async function POST(request: NextRequest) {
 
     if (profileError) {
       console.error('Profile not found after trigger execution:', profileError);
-      
+
       // If profile doesn't exist, create it manually as fallback
       const { data: manualProfile, error: manualError } = await supabaseAdmin
         .from('users')
@@ -151,7 +147,6 @@ export async function POST(request: NextRequest) {
         return NextResponse.json({ error: 'Failed to create user profile. Please try again.' }, { status: 500 });
       }
 
-      console.log('Manual profile created as fallback:', manualProfile.id);
       return NextResponse.json({ 
         user: {
           id: authData.user.id,
@@ -160,8 +155,6 @@ export async function POST(request: NextRequest) {
         }
       });
     }
-
-    console.log('User profile created by trigger:', profileData.id);
 
     return NextResponse.json({ 
       user: {
@@ -241,7 +234,7 @@ export async function DELETE(request: NextRequest) {
 
     // Step 2: Delete from auth
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
-    
+
     if (authError) {
       console.error('Error deleting auth user:', authError);
       // Note: We don't return error here as profile is already deleted

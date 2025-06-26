@@ -1,11 +1,9 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
-
 interface WaterDistribution {
   id: string;
   distribution_date: string;
@@ -27,7 +25,6 @@ interface WaterDistribution {
     capacity: number;
   };
 }
-
 interface DistributionStats {
   totalDistributions: number;
   activeDistributions: number;
@@ -35,7 +32,6 @@ interface DistributionStats {
   totalLitersDelivered: number;
   averageEfficiency: number;
 }
-
 interface RouteLocation {
   id: string;
   route_name: string;
@@ -45,7 +41,6 @@ interface RouteLocation {
   priority: 'low' | 'medium' | 'high';
   last_delivery?: string;
 }
-
 export const WaterDistributionDashboard: React.FC = () => {
   const { user } = useAuth();
   const [distributions, setDistributions] = useState<WaterDistribution[]>([]);
@@ -61,7 +56,6 @@ export const WaterDistributionDashboard: React.FC = () => {
   const [vehicles, setVehicles] = useState<any[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState<'overview' | 'distributions' | 'routes' | 'vehicles'>('overview');
-  
   // Form states
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [distributionForm, setDistributionForm] = useState({
@@ -71,11 +65,9 @@ export const WaterDistributionDashboard: React.FC = () => {
     planned_liters: 0,
     distribution_date: new Date().toISOString().split('T')[0],
   });
-
   useEffect(() => {
     loadData();
   }, []);
-
   const loadData = async () => {
     setIsLoading(true);
     try {
@@ -91,7 +83,6 @@ export const WaterDistributionDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const loadDistributions = async () => {
     try {
       // For now, using water_distributions table or mock data if it doesn't exist
@@ -111,14 +102,12 @@ export const WaterDistributionDashboard: React.FC = () => {
         `)
         .order('created_at', { ascending: false })
         .limit(20);
-
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading distributions:', error);
         // Use mock data if table doesn't exist
         setDistributions(getMockDistributions());
         return;
       }
-
       const transformedData = data?.map(d => ({
         id: d.id,
         distribution_date: d.distribution_date,
@@ -137,14 +126,12 @@ export const WaterDistributionDashboard: React.FC = () => {
           capacity: 5000
         }
       })) || [];
-
       setDistributions(transformedData);
     } catch (error) {
       console.error('Error loading distributions:', error);
       setDistributions(getMockDistributions());
     }
   };
-
   const getMockDistributions = (): WaterDistribution[] => [
     {
       id: '1',
@@ -175,11 +162,9 @@ export const WaterDistributionDashboard: React.FC = () => {
       vehicle: { vehicle_number: 'KA-01-AB-5678', capacity: 6000 }
     }
   ];
-
   const loadStats = async () => {
     try {
       const today = new Date().toISOString().split('T')[0];
-      
       // Calculate stats from distributions
       const totalDistributions = distributions.length;
       const activeDistributions = distributions.filter(d => d.status === 'in_progress').length;
@@ -187,11 +172,9 @@ export const WaterDistributionDashboard: React.FC = () => {
       const totalLitersDelivered = distributions
         .filter(d => d.actual_liters)
         .reduce((sum, d) => sum + (d.actual_liters || 0), 0);
-      
       const averageEfficiency = totalLitersPlanned > 0 
         ? Math.round((totalLitersDelivered / totalLitersPlanned) * 100)
         : 0;
-
       setStats({
         totalDistributions,
         activeDistributions,
@@ -203,7 +186,6 @@ export const WaterDistributionDashboard: React.FC = () => {
       console.error('Error loading stats:', error);
     }
   };
-
   const loadRoutes = async () => {
     // Mock routes data - in real implementation, this would come from a routes table
     const mockRoutes: RouteLocation[] = [
@@ -237,7 +219,6 @@ export const WaterDistributionDashboard: React.FC = () => {
     ];
     setRoutes(mockRoutes);
   };
-
   const loadDriversAndVehicles = async () => {
     try {
       // Load drivers
@@ -246,9 +227,7 @@ export const WaterDistributionDashboard: React.FC = () => {
         .select('id, full_name, phone')
         .eq('role', 'driver_manager')
         .eq('is_active', true);
-
       setDrivers(driversData || []);
-
       // Mock vehicles data - in real implementation, this would come from a vehicles table
       const mockVehicles = [
         { id: 'VEH-001', vehicle_number: 'KA-01-AB-1234', capacity: 5000, status: 'available' },
@@ -260,12 +239,10 @@ export const WaterDistributionDashboard: React.FC = () => {
       console.error('Error loading drivers and vehicles:', error);
     }
   };
-
   const createDistribution = async () => {
     if (!distributionForm.driver_id || !distributionForm.vehicle_id || !distributionForm.planned_liters) {
       return;
     }
-
     setIsLoading(true);
     try {
       const newDistribution = {
@@ -275,11 +252,9 @@ export const WaterDistributionDashboard: React.FC = () => {
         total_liters: distributionForm.planned_liters,
         status: 'active'
       };
-
       const { error } = await supabase
         .from('water_distributions')
         .insert([newDistribution]);
-
       if (error) {
         console.error('Error creating distribution:', error);
         // If table doesn't exist, just update local state
@@ -295,7 +270,6 @@ export const WaterDistributionDashboard: React.FC = () => {
       } else {
         await loadDistributions();
       }
-
       setShowCreateForm(false);
       setDistributionForm({
         driver_id: '',
@@ -310,19 +284,16 @@ export const WaterDistributionDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const updateDistributionStatus = async (id: string, newStatus: string, actualLiters?: number) => {
     setIsLoading(true);
     try {
       const updates: any = { status: newStatus };
       if (actualLiters) updates.total_liters = actualLiters;
       if (newStatus === 'completed') updates.end_time = new Date().toISOString();
-
       const { error } = await supabase
         .from('water_distributions')
         .update(updates)
         .eq('id', id);
-
       if (error) {
         console.error('Error updating distribution:', error);
         // Update local state if database update fails
@@ -336,7 +307,6 @@ export const WaterDistributionDashboard: React.FC = () => {
       } else {
         await loadDistributions();
       }
-      
       await loadStats();
     } catch (error) {
       console.error('Error updating distribution status:', error);
@@ -344,7 +314,6 @@ export const WaterDistributionDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'planned': return 'bg-blue-100 text-blue-800';
@@ -354,7 +323,6 @@ export const WaterDistributionDashboard: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'high': return 'bg-red-100 text-red-800';
@@ -363,14 +331,12 @@ export const WaterDistributionDashboard: React.FC = () => {
       default: return 'bg-gray-100 text-gray-800';
     }
   };
-
   return (
     <div className="max-w-7xl mx-auto p-6">
       <div className="mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Water Distribution Management</h1>
         <p className="text-gray-600 mt-1">Manage water delivery operations and logistics</p>
       </div>
-
       {/* Tab Navigation */}
       <div className="border-b border-gray-200 mb-6">
         <nav className="-mb-px flex space-x-8">
@@ -394,7 +360,6 @@ export const WaterDistributionDashboard: React.FC = () => {
           ))}
         </nav>
       </div>
-
       {/* Overview Tab */}
       {selectedTab === 'overview' && (
         <div className="space-y-6">
@@ -411,7 +376,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -423,7 +387,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -435,7 +398,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -447,7 +409,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                 </div>
               </CardContent>
             </Card>
-
             <Card>
               <CardContent className="p-6">
                 <div className="flex items-center justify-between">
@@ -460,7 +421,6 @@ export const WaterDistributionDashboard: React.FC = () => {
               </CardContent>
             </Card>
           </div>
-
           {/* Recent Activity */}
           <Card>
             <CardHeader>
@@ -489,7 +449,6 @@ export const WaterDistributionDashboard: React.FC = () => {
           </Card>
         </div>
       )}
-
       {/* Distributions Tab */}
       {selectedTab === 'distributions' && (
         <div className="space-y-6">
@@ -499,7 +458,6 @@ export const WaterDistributionDashboard: React.FC = () => {
               Create New Distribution
             </Button>
           </div>
-
           <div className="space-y-4">
             {distributions.map((distribution) => (
               <Card key={distribution.id} className="hover:shadow-md transition-shadow">
@@ -512,7 +470,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                           {distribution.status.replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
-
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
                         <div>
                           <p className="text-sm text-gray-600">
@@ -552,7 +509,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                         </div>
                       </div>
                     </div>
-
                     <div className="ml-4 flex flex-col gap-2">
                       {distribution.status === 'planned' && (
                         <Button
@@ -583,7 +539,6 @@ export const WaterDistributionDashboard: React.FC = () => {
           </div>
         </div>
       )}
-
       {/* Routes Tab */}
       {selectedTab === 'routes' && (
         <div className="space-y-6">
@@ -593,7 +548,6 @@ export const WaterDistributionDashboard: React.FC = () => {
               Add New Route
             </Button>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {routes.map((route) => (
               <Card key={route.id} className="hover:shadow-md transition-shadow">
@@ -607,7 +561,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                       {route.priority.toUpperCase()}
                     </span>
                   </div>
-
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Address:</span> {route.address}
@@ -621,7 +574,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                       </p>
                     )}
                   </div>
-
                   <div className="mt-4">
                     <Button
                       onClick={() => {
@@ -645,7 +597,6 @@ export const WaterDistributionDashboard: React.FC = () => {
           </div>
         </div>
       )}
-
       {/* Vehicles Tab */}
       {selectedTab === 'vehicles' && (
         <div className="space-y-6">
@@ -655,7 +606,6 @@ export const WaterDistributionDashboard: React.FC = () => {
               Add New Vehicle
             </Button>
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
             {vehicles.map((vehicle) => (
               <Card key={vehicle.id} className="hover:shadow-md transition-shadow">
@@ -673,7 +623,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                       {vehicle.status.toUpperCase()}
                     </span>
                   </div>
-
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Status:</span> {vehicle.status.replace('_', ' ')}
@@ -682,7 +631,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                       <span className="font-medium">Type:</span> Water Tanker
                     </p>
                   </div>
-
                   <div className="mt-4">
                     <Button
                       onClick={() => console.log('Vehicle maintenance/tracking')}
@@ -700,7 +648,6 @@ export const WaterDistributionDashboard: React.FC = () => {
           </div>
         </div>
       )}
-
       {/* Create Distribution Modal */}
       {showCreateForm && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
@@ -725,7 +672,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Vehicle</label>
                 <select
@@ -742,7 +688,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Route Name</label>
                 <input
@@ -754,7 +699,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Planned Liters</label>
                 <input
@@ -766,7 +710,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                   required
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">Distribution Date</label>
                 <input
@@ -777,7 +720,6 @@ export const WaterDistributionDashboard: React.FC = () => {
                   required
                 />
               </div>
-
               <div className="flex space-x-3 pt-4">
                 <Button
                   onClick={createDistribution}

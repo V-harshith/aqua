@@ -1,12 +1,10 @@
 "use client";
-
 import React, { useState, useEffect } from 'react';
 import { Card } from '../ui/Card';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
 import { supabase } from '../../lib/supabase';
-
 interface ServiceRequest {
   id: string;
   request_number: string;
@@ -41,7 +39,6 @@ interface ServiceRequest {
     };
   };
 }
-
 interface Technician {
   id: string;
   full_name: string;
@@ -52,7 +49,6 @@ interface Technician {
   rating: number;
   is_available: boolean;
 }
-
 interface ServiceAssignment {
   id: string;
   service_request_id: string;
@@ -72,11 +68,9 @@ interface ServiceAssignment {
     phone: string;
   };
 }
-
 export const ServiceManagementDashboard: React.FC = () => {
   const { user } = useAuth();
   const { success: showSuccess, error: showError } = useToast();
-  
   const [activeTab, setActiveTab] = useState<'requests' | 'assignments' | 'analytics'>('requests');
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
@@ -88,7 +82,6 @@ export const ServiceManagementDashboard: React.FC = () => {
   const [scheduledDate, setScheduledDate] = useState('');
   const [scheduledTime, setScheduledTime] = useState('09:00');
   const [estimatedDuration, setEstimatedDuration] = useState(120);
-
   const [stats, setStats] = useState({
     total_requests: 0,
     pending_requests: 0,
@@ -97,11 +90,9 @@ export const ServiceManagementDashboard: React.FC = () => {
     emergency_requests: 0,
     avg_response_time: 0,
   });
-
   useEffect(() => {
     loadDashboardData();
   }, []);
-
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
@@ -117,7 +108,6 @@ export const ServiceManagementDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const loadServiceRequests = async () => {
     const { data, error } = await supabase
       .from('service_requests')
@@ -143,11 +133,9 @@ export const ServiceManagementDashboard: React.FC = () => {
       `)
       .order('created_at', { ascending: false })
       .limit(50);
-
     if (error) throw error;
     setServiceRequests(data || []);
   };
-
   const loadTechnicians = async () => {
     const { data, error } = await supabase
       .from('users')
@@ -163,11 +151,9 @@ export const ServiceManagementDashboard: React.FC = () => {
       `)
       .eq('role', 'technician')
       .eq('status', 'active');
-
     if (error) throw error;
     setTechnicians(data || []);
   };
-
   const loadAssignments = async () => {
     const { data, error } = await supabase
       .from('service_assignments')
@@ -186,16 +172,13 @@ export const ServiceManagementDashboard: React.FC = () => {
       .gte('scheduled_date', new Date().toISOString().split('T')[0])
       .order('scheduled_date', { ascending: true })
       .limit(30);
-
     if (error) throw error;
     setAssignments(data || []);
   };
-
   const loadStats = async () => {
     try {
       // Get today's date
       const today = new Date().toISOString().split('T')[0];
-      
       // Load various statistics
       const [totalReq, pendingReq, inProgressReq, completedToday, emergencyReq] = await Promise.all([
         supabase.from('service_requests').select('id', { count: 'exact', head: true }),
@@ -204,7 +187,6 @@ export const ServiceManagementDashboard: React.FC = () => {
         supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('status', 'completed').gte('updated_at', today),
         supabase.from('service_requests').select('id', { count: 'exact', head: true }).eq('priority', 'emergency'),
       ]);
-
       setStats({
         total_requests: totalReq.count || 0,
         pending_requests: pendingReq.count || 0,
@@ -217,18 +199,15 @@ export const ServiceManagementDashboard: React.FC = () => {
       console.error('Error loading stats:', error);
     }
   };
-
   const handleAssignTechnician = async () => {
     if (!selectedRequest || !selectedTechnician || !scheduledDate || !scheduledTime) {
       showError({ title: 'Please fill all required fields' });
       return;
     }
-
     setIsLoading(true);
     try {
       const endTime = new Date(`${scheduledDate} ${scheduledTime}`);
       endTime.setMinutes(endTime.getMinutes() + estimatedDuration);
-
       const assignmentData = {
         service_request_id: selectedRequest.id,
         assigned_technician_id: selectedTechnician,
@@ -240,28 +219,22 @@ export const ServiceManagementDashboard: React.FC = () => {
         status: 'assigned',
         acceptance_status: 'pending',
       };
-
       const { error: assignError } = await supabase
         .from('service_assignments')
         .insert([assignmentData]);
-
       if (assignError) throw assignError;
-
       // Update service request status
       const { error: updateError } = await supabase
         .from('service_requests')
         .update({ status: 'assigned' })
         .eq('id', selectedRequest.id);
-
       if (updateError) throw updateError;
-
       showSuccess({ title: 'Technician assigned successfully!' });
       setShowAssignModal(false);
       setSelectedRequest(null);
       setSelectedTechnician('');
       setScheduledDate('');
       setScheduledTime('09:00');
-      
       loadDashboardData();
     } catch (error: any) {
       showError({ title: error.message || 'Failed to assign technician' });
@@ -269,23 +242,19 @@ export const ServiceManagementDashboard: React.FC = () => {
       setIsLoading(false);
     }
   };
-
   const updateRequestStatus = async (requestId: string, newStatus: string) => {
     try {
       const { error } = await supabase
         .from('service_requests')
         .update({ status: newStatus })
         .eq('id', requestId);
-
       if (error) throw error;
-
       showSuccess({ title: `Request status updated to ${newStatus}` });
       loadServiceRequests();
     } catch (error: any) {
       showError({ title: error.message || 'Failed to update status' });
     }
   };
-
   const getPriorityColor = (priority: string) => {
     switch (priority) {
       case 'emergency': return 'text-red-700 bg-red-100';
@@ -296,7 +265,6 @@ export const ServiceManagementDashboard: React.FC = () => {
       default: return 'text-gray-700 bg-gray-100';
     }
   };
-
   const getStatusColor = (status: string) => {
     switch (status) {
       case 'pending': return 'text-yellow-700 bg-yellow-100';
@@ -307,7 +275,6 @@ export const ServiceManagementDashboard: React.FC = () => {
       default: return 'text-gray-700 bg-gray-100';
     }
   };
-
   return (
     <div className="max-w-7xl mx-auto p-4">
       {/* Header */}
@@ -315,7 +282,6 @@ export const ServiceManagementDashboard: React.FC = () => {
         <h1 className="text-3xl font-bold text-gray-900">Service Management</h1>
         <p className="text-gray-600">Manage service requests, assignments, and technician schedules</p>
       </div>
-
       {/* Statistics Cards */}
       <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-4 mb-6">
         <Card>
@@ -355,7 +321,6 @@ export const ServiceManagementDashboard: React.FC = () => {
           </div>
         </Card>
       </div>
-
       {/* Tab Navigation */}
       <div className="flex space-x-1 mb-6">
         {[
@@ -376,7 +341,6 @@ export const ServiceManagementDashboard: React.FC = () => {
           </button>
         ))}
       </div>
-
       {/* Service Requests Tab */}
       {activeTab === 'requests' && (
         <Card>
@@ -387,7 +351,6 @@ export const ServiceManagementDashboard: React.FC = () => {
                 {isLoading ? 'Loading...' : 'Refresh'}
               </Button>
             </div>
-
             <div className="overflow-x-auto">
               <table className="w-full text-sm">
                 <thead>
@@ -461,13 +424,11 @@ export const ServiceManagementDashboard: React.FC = () => {
           </div>
         </Card>
       )}
-
       {/* Assignments Tab */}
       {activeTab === 'assignments' && (
         <Card>
           <div className="p-6">
             <h3 className="text-lg font-semibold mb-4">Today's Assignments</h3>
-            
             <div className="space-y-4">
               {assignments.map(assignment => (
                 <div key={assignment.id} className="border rounded-lg p-4">
@@ -507,13 +468,11 @@ export const ServiceManagementDashboard: React.FC = () => {
           </div>
         </Card>
       )}
-
       {/* Assignment Modal */}
       {showAssignModal && selectedRequest && (
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 w-full max-w-md">
             <h3 className="text-lg font-semibold mb-4">Assign Technician</h3>
-            
             <div className="mb-4">
               <div className="text-sm text-gray-600 mb-2">Request: {selectedRequest.request_number}</div>
               <div className="text-sm text-gray-600 mb-2">Service: {selectedRequest.service_type.type_name}</div>
@@ -523,7 +482,6 @@ export const ServiceManagementDashboard: React.FC = () => {
                 </span>
               </div>
             </div>
-
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
@@ -545,7 +503,6 @@ export const ServiceManagementDashboard: React.FC = () => {
                   ))}
                 </select>
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Scheduled Date
@@ -558,7 +515,6 @@ export const ServiceManagementDashboard: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Start Time
@@ -570,7 +526,6 @@ export const ServiceManagementDashboard: React.FC = () => {
                   className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 />
               </div>
-
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
                   Estimated Duration (minutes)
@@ -585,7 +540,6 @@ export const ServiceManagementDashboard: React.FC = () => {
                 />
               </div>
             </div>
-
             <div className="flex justify-end space-x-4 mt-6">
               <Button
                 variant="secondary"

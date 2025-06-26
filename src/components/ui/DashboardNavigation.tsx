@@ -1,9 +1,7 @@
 'use client';
-
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
-
 interface NavItem {
   href: string;
   label: string;
@@ -11,11 +9,9 @@ interface NavItem {
   description: string;
   requiredRoles?: string[];
 }
-
 export function DashboardNavigation() {
   const pathname = usePathname();
   const { userProfile } = useAuthContext();
-
   const navItems: NavItem[] = [
     {
       href: '/dashboard',
@@ -59,12 +55,10 @@ export function DashboardNavigation() {
       requiredRoles: ['admin', 'dept_head', 'service_manager', 'technician']
     }
   ];
-
   const filteredNavItems = navItems.filter(item => {
     if (!item.requiredRoles) return true;
     return userProfile && item.requiredRoles.includes(userProfile.role);
   });
-
   return (
     <div className="bg-white border-b border-gray-200">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">

@@ -1,5 +1,4 @@
 "use client";
-
 import React from 'react';
 import { useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
@@ -8,7 +7,6 @@ import Input from '@/components/ui/Input';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import { useToastContext } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
-
 interface ComplaintData {
   title: string;
   description: string;
@@ -17,12 +15,10 @@ interface ComplaintData {
   location?: string;
   phone?: string;
 }
-
 interface ComplaintFormProps {
   onSubmit: (data: ComplaintData) => Promise<void>;
   loading?: boolean;
 }
-
 export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFormProps) {
   const { userProfile } = useAuthContext();
   const { success, error: showError, info } = useToastContext();
@@ -34,9 +30,7 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
     location: '',
     phone: userProfile?.phone || ''
   });
-
   const [errors, setErrors] = useState<Record<string, string>>({});
-
   const categoryOptions = [
     { value: 'water_quality', label: '💧 Water Quality', description: 'Issues with water taste, smell, or appearance' },
     { value: 'delivery', label: '🚚 Delivery', description: 'Late or missed water deliveries' },
@@ -45,30 +39,25 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
     { value: 'technical', label: '⚙️ Technical', description: 'Equipment or technical issues' },
     { value: 'other', label: '📝 Other', description: 'Other complaints or feedback' }
   ];
-
   const priorityOptions = [
     { value: 'low', label: 'Low', color: 'bg-green-100 text-green-800', description: 'Non-urgent, can wait' },
     { value: 'medium', label: 'Medium', color: 'bg-yellow-100 text-yellow-800', description: 'Normal priority' },
     { value: 'high', label: 'High', color: 'bg-orange-100 text-orange-800', description: 'Needs quick attention' },
     { value: 'urgent', label: 'Urgent', color: 'bg-red-100 text-red-800', description: 'Immediate attention required' }
   ];
-
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrors({});
-
     // Validation
     const newErrors: Record<string, string> = {};
     if (!formData.title.trim()) newErrors.title = 'Title is required';
     if (!formData.description.trim()) newErrors.description = 'Description is required';
     if (formData.title.length < 5) newErrors.title = 'Title must be at least 5 characters';
     if (formData.description.length < 10) newErrors.description = 'Description must be at least 10 characters';
-
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
-
     try {
       await onSubmit(formData);
       // Reset form on success
@@ -84,7 +73,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
       console.error('Error submitting complaint:', error);
     }
   };
-
   const handleInputChange = (field: keyof ComplaintData, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
     // Clear error when user starts typing
@@ -92,7 +80,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
       setErrors(prev => ({ ...prev, [field]: '' }));
     }
   };
-
   return (
     <Card className="w-full max-w-2xl mx-auto">
       <CardHeader>
@@ -101,7 +88,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
           Please provide details about your issue so we can assist you promptly.
         </p>
       </CardHeader>
-
       <CardContent>
         <form onSubmit={handleSubmit} className="space-y-6">
           <div>
@@ -117,7 +103,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
               disabled={loading}
             />
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -136,7 +121,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
                 ))}
               </select>
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Priority *
@@ -155,7 +139,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
               </select>
             </div>
           </div>
-
           <div>
             <label className="block text-sm font-medium text-gray-700 mb-2">
               Description *
@@ -174,7 +157,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
               <p className="mt-1 text-sm text-red-600">{errors.description}</p>
             )}
           </div>
-
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -188,7 +170,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
                 disabled={loading}
               />
             </div>
-
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Contact Phone
@@ -202,7 +183,6 @@ export default function ComplaintForm({ onSubmit, loading = false }: ComplaintFo
               />
             </div>
           </div>
-
           <div className="flex justify-end space-x-4">
             <Button
               type="button"

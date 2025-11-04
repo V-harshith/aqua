@@ -3,6 +3,7 @@ import React, { useState, useEffect } from 'react';
 import { useAuth } from '@/hooks/useAuth';
 import { useToastContext } from '@/context/ToastContext';
 import { supabase } from '@/lib/supabase';
+import { authenticatedGet } from '@/lib/auth-client';
 import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import Link from 'next/link';
@@ -47,7 +48,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
         throw signOutError;
       }
       success({ title: 'Signed out successfully' });
-      router.push('/signin');
+      router.replace('/');
     } catch (err: any) {
       error({ title: 'Sign out failed', message: err.message });
     } finally {
@@ -57,18 +58,8 @@ export const EnhancedAdminDashboard: React.FC = () => {
   const loadAllData = async () => {
     try {
       setIsLoading(true);
-      // Fetch real data from API
-      const response = await fetch('/api/admin/all-data', {
-        cache: 'no-store',
-        headers: {
-          'Cache-Control': 'no-cache'
-        }
-      });
-      if (!response.ok) {
-        // If API fails, show a meaningful error instead of falling back to mock
-        throw new Error(`Failed to load data: ${response.status} ${response.statusText}`);
-      }
-      const data = await response.json();
+      // Fetch real data from API with authentication
+      const data = await authenticatedGet('/api/admin/all-data');
       if (!data) {
         throw new Error('No data received from server');
       }

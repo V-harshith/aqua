@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from 'react';
 import UpdatePasswordContent from './UpdatePasswordContent';
 export default function UpdatePasswordPage() {

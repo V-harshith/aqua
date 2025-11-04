@@ -1,7 +1,6 @@
-import { NextResponse } from 'next/server';
+import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Server-side Supabase client with service role (can perform admin operations)
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -13,73 +12,121 @@ const supabaseAdmin = createClient(
   }
 );
 
-// GET - Fetch admin dashboard statistics
-export async function GET() {
+// Verify admin access
+async function verifyAdminAccess(request: NextRequest) {
   try {
-    // Get all users count
-    const { count: totalUsers, error: totalError } = await supabaseAdmin
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid authorization header', status: 401 };
+    }
+
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      return { error: 'Invalid token', status: 401 };
+    }
+
+    // Check if user has admin role
+    const { data: userProfile, error: profileError } = await supabaseAdmin
       .from('users')
-      .select('*', { count: 'exact', head: true });
+      .select('role')
+      .eq('id', user.id)
+      .single();
 
-    if (totalError) {
-      console.error('Error fetching total users:', totalError);
+    if (profileError || !userProfile || !['admin', 'service_manager'].includes(userProfile.role)) {
+      return { error: 'Admin or manager access required', status: 403 };
     }
 
-    // Get active users count
-    const { count: activeUsers, error: activeError } = await supabaseAdmin
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('is_active', true);
+    return { user, userProfile };
+  } catch (error) {
+    return { error: 'Authentication failed', status: 500 };
+  }
+}
 
-    if (activeError) {
-      console.error('Error fetching active users:', activeError);
+export async function GET(request: NextRequest) {
+  try {
+    // Verify admin access
+    const authResult = await verifyAdminAccess(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
 
-    // Get staff members count (all roles except customer)
-    const { count: staffMembers, error: staffError } = await supabaseAdmin
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .neq('role', 'customer');
+    // Get total counts
+    const [
+      { count: totalCustomers },
+      { count: totalServices },
+      { count: totalComplaints },
+      { count: totalTechnicians },
+      { count: pendingServices },
+      { count: completedServices }
+    ] = await Promise.all([
+      supabaseAdmin.from('customers').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('services').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }),
+      supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).eq('role', 'technician'),
+      supabaseAdmin.from('services').select('*', { count: 'exact', head: true }).eq('status', 'pending'),
+      supabaseAdmin.from('services').select('*', { count: 'exact', head: true }).eq('status', 'completed')
+    ]);
 
-    if (staffError) {
-      console.error('Error fetching staff members:', staffError);
-    }
+    // Get recent activity
+    const { data: recentServices } = await supabaseAdmin
+      .from('services')
+      .select(`
+        id,
+        service_number,
+        status,
+        created_at,
+        customer:customers(business_name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(5);
 
-    // Get customers count
-    const { count: customers, error: customersError } = await supabaseAdmin
-      .from('users')
-      .select('*', { count: 'exact', head: true })
-      .eq('role', 'customer');
+    // Get service status distribution
+    const { data: serviceStatusData } = await supabaseAdmin
+      .from('services')
+      .select('status')
+      .order('status');
 
-    if (customersError) {
-      console.error('Error fetching customers:', customersError);
-    }
+    const statusDistribution = serviceStatusData?.reduce((acc: any, service) => {
+      acc[service.status] = (acc[service.status] || 0) + 1;
+      return acc;
+    }, {}) || {};
 
-    // Get recent complaints count
-    const { count: complaints, error: complaintsError } = await supabaseAdmin
-      .from('complaints')
-      .select('*', { count: 'exact', head: true });
+    // Get monthly service trends (last 6 months)
+    const sixMonthsAgo = new Date();
+    sixMonthsAgo.setMonth(sixMonthsAgo.getMonth() - 6);
 
-    if (complaintsError) {
-      console.error('Error fetching complaints:', complaintsError);
-    }
+    const { data: monthlyServices } = await supabaseAdmin
+      .from('services')
+      .select('created_at')
+      .gte('created_at', sixMonthsAgo.toISOString())
+      .order('created_at');
+
+    const monthlyTrends = monthlyServices?.reduce((acc: any, service) => {
+      const month = new Date(service.created_at).toISOString().slice(0, 7); // YYYY-MM
+      acc[month] = (acc[month] || 0) + 1;
+      return acc;
+    }, {}) || {};
 
     return NextResponse.json({
-      totalUsers: totalUsers || 0,
-      activeUsers: activeUsers || 0,
-      staffMembers: staffMembers || 0,
-      customers: customers || 0,
-      complaints: complaints || 0
+      overview: {
+        totalCustomers: totalCustomers || 0,
+        totalServices: totalServices || 0,
+        totalComplaints: totalComplaints || 0,
+        totalTechnicians: totalTechnicians || 0,
+        pendingServices: pendingServices || 0,
+        completedServices: completedServices || 0,
+        completionRate: totalServices ? Math.round((completedServices || 0) / totalServices * 100) : 0
+      },
+      recentActivity: recentServices || [],
+      statusDistribution,
+      monthlyTrends,
+      timestamp: new Date().toISOString()
     });
 
   } catch (error) {
-    console.error('Error fetching stats:', error);
-    return NextResponse.json({
-      totalUsers: 0,
-      activeUsers: 0,
-      staffMembers: 0,
-      customers: 0,
-      complaints: 0
-    });
+    console.error('Admin stats error:', error);
+    return NextResponse.json({ error: 'Failed to fetch admin statistics' }, { status: 500 });
   }
-} 
+}

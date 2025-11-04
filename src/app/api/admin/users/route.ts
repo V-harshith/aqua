@@ -1,50 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
 
-// Check if required environment variables are available
-const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
-const serviceRoleKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
-
-if (!supabaseUrl) {
-  console.error('❌ NEXT_PUBLIC_SUPABASE_URL environment variable is not set');
-}
-
-if (!serviceRoleKey) {
-  console.error('❌ SUPABASE_SERVICE_ROLE_KEY environment variable is not set');
-}
-
-// Server-side Supabase client with service role (can perform admin operations)
-const supabaseAdmin = supabaseUrl && serviceRoleKey ? createClient(
-  supabaseUrl,
-  serviceRoleKey,
+const supabaseAdmin = createClient(
+  process.env.NEXT_PUBLIC_SUPABASE_URL!,
+  process.env.SUPABASE_SERVICE_ROLE_KEY!,
   {
     auth: {
       autoRefreshToken: false,
       persistSession: false
     }
   }
-) : null;
+);
 
-// GET - Fetch all users
-export async function GET() {
+// Verify admin access
+async function verifyAdminAccess(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ 
-        error: 'Server configuration error. Please ensure NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY environment variables are set.' 
-      }, { status: 500 });
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { error: 'Missing or invalid authorization header', status: 401 };
     }
 
-    const { data, error } = await supabaseAdmin
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      return { error: 'Invalid token', status: 401 };
+    }
+
+    // Check if user has admin role
+    const { data: userProfile, error: profileError } = await supabaseAdmin
       .from('users')
-      .select('*')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !userProfile || userProfile.role !== 'admin') {
+      return { error: 'Admin access required', status: 403 };
+    }
+
+    return { user, userProfile };
+  } catch (error) {
+    return { error: 'Authentication failed', status: 500 };
+  }
+}
+
+// GET - Fetch all users
+export async function GET(request: NextRequest) {
+  try {
+    // Verify admin access
+    const authResult = await verifyAdminAccess(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
+    }
+    const { searchParams } = new URL(request.url);
+    const role = searchParams.get('role');
+    const page = parseInt(searchParams.get('page') || '1');
+    const limit = parseInt(searchParams.get('limit') || '50');
+    const offset = (page - 1) * limit;
+
+    let query = supabaseAdmin
+      .from('users')
+      .select('*', { count: 'exact' })
       .order('created_at', { ascending: false });
+
+    // Apply role filter if specified
+    if (role && role !== 'all') {
+      query = query.eq('role', role);
+    }
+
+    // Apply pagination
+    query = query.range(offset, offset + limit - 1);
+
+    const { data: users, error, count } = await query;
 
     if (error) {
       console.error('Error fetching users:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
 
-    return NextResponse.json({ users: data });
+    return NextResponse.json({
+      users: users || [],
+      pagination: {
+        page,
+        limit,
+        total: count || 0,
+        totalPages: Math.ceil((count || 0) / limit)
+      },
+      timestamp: new Date().toISOString()
+    });
+
   } catch (error) {
     console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
@@ -54,153 +98,130 @@ export async function GET() {
 // POST - Create new user
 export async function POST(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ 
-        error: 'Server configuration error. Please contact administrator.' 
-      }, { status: 500 });
+    // Verify admin access
+    const authResult = await verifyAdminAccess(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
-
-    const { email, password, full_name, role, phone, department, is_active } = await request.json();
+    const body = await request.json();
+    const {
+      email,
+      password,
+      full_name,
+      phone,
+      role = 'customer',
+      status = 'active'
+    } = body;
 
     // Validate required fields
-    if (!email || !password || !full_name || !role) {
-      return NextResponse.json({ error: 'Missing required fields' }, { status: 400 });
+    if (!email || !password || !full_name) {
+      return NextResponse.json({ 
+        error: 'Email, password, and full name are required' 
+      }, { status: 400 });
     }
 
-    // Check if user already exists by email in both auth and users table
-    const { data: existingAuthUser } = await supabaseAdmin.auth.admin.listUsers();
-    const emailExistsInAuth = existingAuthUser?.users?.some(u => u.email === email);
-
-    if (emailExistsInAuth) {
-
-      return NextResponse.json({ error: 'A user with this email already exists' }, { status: 400 });
-    }
-
-    const { data: existingUser } = await supabaseAdmin
-      .from('users')
-      .select('email')
-      .eq('email', email)
-      .maybeSingle();
-
-    if (existingUser) {
-
-      return NextResponse.json({ error: 'A user with this email already exists' }, { status: 400 });
-    }
-
-    // Create user in Supabase Auth with complete metadata
-    // The database trigger will automatically create the profile
-    const { data: authData, error: authError } = await supabaseAdmin.auth.admin.createUser({
+    // Create user in Supabase Auth
+    const { data: authUser, error: authError } = await supabaseAdmin.auth.admin.createUser({
       email,
       password,
       email_confirm: true,
       user_metadata: {
         full_name,
-        role,
-        phone: phone || null,
-        department: department || null,
-        is_active: is_active ?? true
+        role
       }
     });
 
     if (authError) {
-      console.error('Auth creation error:', authError);
-      return NextResponse.json({ error: authError.message }, { status: 400 });
+      console.error('Auth user creation error:', authError);
+      return NextResponse.json({ error: authError.message }, { status: 500 });
     }
 
-    if (!authData.user) {
-      return NextResponse.json({ error: 'Failed to create user account' }, { status: 500 });
-    }
-
-    // Wait a moment for the trigger to execute, then fetch the created profile
-    await new Promise(resolve => setTimeout(resolve, 500));
-
-    const { data: profileData, error: profileError } = await supabaseAdmin
+    // Create user profile in users table
+    const { data: user, error: profileError } = await supabaseAdmin
       .from('users')
-      .select('*')
-      .eq('id', authData.user.id)
+      .insert({
+        id: authUser.user.id,
+        email,
+        full_name,
+        phone,
+        role,
+        status,
+        created_at: new Date().toISOString()
+      })
+      .select()
       .single();
 
     if (profileError) {
-      console.error('Profile not found after trigger execution:', profileError);
-
-      // If profile doesn't exist, create it manually as fallback
-      const { data: manualProfile, error: manualError } = await supabaseAdmin
-        .from('users')
-        .insert([
-          {
-            id: authData.user.id,
-            email,
-            full_name,
-            role,
-            phone: phone || null,
-            department: department || null,
-            is_active: is_active ?? true
-          }
-        ])
-        .select()
-        .single();
-
-      if (manualError) {
-        console.error('Manual profile creation failed:', manualError);
-        // Cleanup: Delete the auth user if profile creation failed
-        await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-        return NextResponse.json({ error: 'Failed to create user profile. Please try again.' }, { status: 500 });
-      }
-
-      return NextResponse.json({ 
-        user: {
-          id: authData.user.id,
-          email: authData.user.email,
-          ...manualProfile
-        }
-      });
+      console.error('User profile creation error:', profileError);
+      // Try to clean up auth user if profile creation failed
+      await supabaseAdmin.auth.admin.deleteUser(authUser.user.id);
+      return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
 
     return NextResponse.json({ 
-      user: {
-        id: authData.user.id,
-        email: authData.user.email,
-        ...profileData
-      }
-    });
+      success: true,
+      user,
+      message: 'User created successfully'
+    }, { status: 201 });
 
   } catch (error) {
-    console.error('Unexpected error creating user:', error);
+    console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
 
-// PATCH - Update user status
+// PATCH - Update user
 export async function PATCH(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ 
-        error: 'Server configuration error. Please contact administrator.' 
-      }, { status: 500 });
+    // Verify admin access
+    const authResult = await verifyAdminAccess(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
-
-    const { userId, updates } = await request.json();
+    const { searchParams } = new URL(request.url);
+    const userId = searchParams.get('id');
+    const body = await request.json();
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    const { data, error } = await supabaseAdmin
+    const { password, ...profileData } = body;
+
+    // Update auth user if password is provided
+    if (password) {
+      const { error: authError } = await supabaseAdmin.auth.admin.updateUserById(
+        userId,
+        { password }
+      );
+
+      if (authError) {
+        console.error('Auth update error:', authError);
+        return NextResponse.json({ error: authError.message }, { status: 500 });
+      }
+    }
+
+    // Update user profile
+    const { data: user, error: profileError } = await supabaseAdmin
       .from('users')
-      .update(updates)
+      .update(profileData)
       .eq('id', userId)
       .select()
       .single();
 
-    if (error) {
-      console.error('Error updating user:', error);
-      return NextResponse.json({ error: error.message }, { status: 500 });
+    if (profileError) {
+      console.error('Profile update error:', profileError);
+      return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
 
-    return NextResponse.json({ user: data });
+    return NextResponse.json({ 
+      success: true,
+      user,
+      message: 'User updated successfully'
+    });
 
   } catch (error) {
-    console.error('Unexpected error updating user:', error);
+    console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }
@@ -208,42 +229,45 @@ export async function PATCH(request: NextRequest) {
 // DELETE - Delete user
 export async function DELETE(request: NextRequest) {
   try {
-    if (!supabaseAdmin) {
-      return NextResponse.json({ 
-        error: 'Server configuration error. Please contact administrator.' 
-      }, { status: 500 });
+    // Verify admin access
+    const authResult = await verifyAdminAccess(request);
+    if ('error' in authResult) {
+      return NextResponse.json({ error: authResult.error }, { status: authResult.status });
     }
-
     const { searchParams } = new URL(request.url);
-    const userId = searchParams.get('userId');
+    const userId = searchParams.get('id');
 
     if (!userId) {
       return NextResponse.json({ error: 'User ID is required' }, { status: 400 });
     }
 
-    // Step 1: Delete from users table (profile)
+    // Delete from users table first
     const { error: profileError } = await supabaseAdmin
       .from('users')
       .delete()
       .eq('id', userId);
 
     if (profileError) {
-      console.error('Error deleting user profile:', profileError);
+      console.error('Profile deletion error:', profileError);
       return NextResponse.json({ error: profileError.message }, { status: 500 });
     }
 
-    // Step 2: Delete from auth
+    // Delete from auth
     const { error: authError } = await supabaseAdmin.auth.admin.deleteUser(userId);
 
     if (authError) {
-      console.error('Error deleting auth user:', authError);
-      // Note: We don't return error here as profile is already deleted
+      console.error('Auth deletion error:', authError);
+      // Profile is already deleted, but log the auth error
+      console.warn('Auth user deletion failed, but profile was deleted');
     }
 
-    return NextResponse.json({ message: 'User deleted successfully' });
+    return NextResponse.json({ 
+      success: true,
+      message: 'User deleted successfully'
+    });
 
   } catch (error) {
-    console.error('Unexpected error deleting user:', error);
+    console.error('Unexpected error:', error);
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 });
   }
 }

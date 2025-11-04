@@ -1,5 +1,7 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useSearchParams } from 'next/navigation';
 import { useEffect, useState, Suspense } from 'react';
 import Link from 'next/link';
@@ -59,15 +61,11 @@ function AuthErrorContent() {
           <div className="space-y-4">
             {errorInfo.action === 'signin' && (
               <>
-                <Link href="/signin">
-                  <Button variant="primary" fullWidth>
-                    Back to Sign In
-                  </Button>
+                <Link href="/" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-md hover:bg-blue-700 transition-colors">
+                  Back to Sign In
                 </Link>
-                <Link href="/reset-password">
-                  <Button variant="outline" fullWidth>
-                    Reset Password
-                  </Button>
+                <Link href="/reset-password" className="inline-flex items-center justify-center w-full h-10 px-4 py-2 text-sm font-medium border border-gray-300 bg-transparent rounded-md hover:bg-gray-50 transition-colors">
+                  Reset Password
                 </Link>
               </>
             )}

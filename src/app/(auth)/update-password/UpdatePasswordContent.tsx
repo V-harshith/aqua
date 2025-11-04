@@ -47,7 +47,7 @@ export default function UpdatePasswordContent() {
       setMessage('Password updated successfully! Redirecting to sign in...');
       // Redirect to sign in after 2 seconds
       setTimeout(() => {
-        router.push('/signin');
+        router.replace('/');
       }, 2000);
     } catch (error: any) {
       setError(error.message || 'Failed to update password');
@@ -108,7 +108,7 @@ export default function UpdatePasswordContent() {
         </CardContent>
         <CardFooter>
           <div className="text-center text-sm w-full">
-            <Link href="/signin" className="text-blue-600 hover:underline">
+            <Link href="/" className="text-blue-600 hover:underline">
               Back to Sign In
             </Link>
           </div>

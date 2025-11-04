@@ -21,8 +21,8 @@ export default function AuthNav() {
         ) : (
           <>
             <Link 
-              href="/signin" 
-              className={`px-4 py-2 rounded ${pathname === '/signin' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'} transition-colors`}
+              href="/" 
+              className={`px-4 py-2 rounded ${pathname === '/' ? 'bg-blue-600 text-white' : 'text-blue-600 hover:bg-blue-50'} transition-colors`}
             >
               Sign In
             </Link>

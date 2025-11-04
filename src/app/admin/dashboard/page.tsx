@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import { EnhancedAdminDashboard } from '@/components/dashboard/EnhancedAdminDashboard';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 export default function AdminDashboardPage() {

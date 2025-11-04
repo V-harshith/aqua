@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import UserManagement from '@/components/admin/UserManagement';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { Card } from '@/components/ui/Card';

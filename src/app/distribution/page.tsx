@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import React from 'react';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import { WaterDistributionDashboard } from '@/components/distribution/WaterDistributionDashboard';

@@ -1,12 +1,13 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import SignInForm from '@/components/auth/SignInForm';
 import SignUpForm from '@/components/auth/SignUpForm';
-import { useState } from 'react';
 
 export default function Home() {
   const { user, loading } = useAuthContext();
@@ -14,10 +15,9 @@ export default function Home() {
   const [showSignUp, setShowSignUp] = useState(false);
 
   useEffect(() => {
-    // Only redirect if user is authenticated
+    // Fast redirect if user is authenticated
     if (!loading && user) {
-
-      router.push('/dashboard');
+      router.replace('/dashboard');
     }
   }, [user, loading, router]);
 

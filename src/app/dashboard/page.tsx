@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
@@ -17,13 +20,13 @@ export default function DashboardPage() {
   const router = useRouter();
   useEffect(() => {
     if (!loading && !user) {
-      router.push('/signin');
+      router.replace('/');
     }
   }, [user, loading, router]);
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
-      router.push('/signin');
+      router.replace('/');
     } catch (error) {
       console.error('Sign out error:', error);
     }

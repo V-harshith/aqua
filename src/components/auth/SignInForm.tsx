@@ -43,12 +43,9 @@ export default function SignInForm() {
       }
 
       if (data.user) {
-
         setMessage('✅ Sign-in successful! Redirecting...');
-
-        // Use router.push for proper Next.js navigation
-        router.push('/dashboard');
-        router.refresh();
+        // Fast redirect without refresh
+        router.replace('/dashboard');
       }
     } catch (error: any) {
       console.error('🔑 Sign-in failed:', error);

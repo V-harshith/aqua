@@ -7,6 +7,7 @@ import Button from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { supabase } from '@/lib/supabase';
 import { useRouter } from 'next/navigation';
+import { authenticatedGet } from '@/lib/auth-client';
 
 interface ServiceRequest {
   id: string;
@@ -69,58 +70,34 @@ export function CustomerDashboard() {
     try {
       setIsLoading(true);
 
-      // Fetch real data from APIs in parallel
-      const [servicesResponse, complaintsResponse, statsResponse] = await Promise.all([
-        fetch(`/api/services?customer_id=${userProfile.id}`, { 
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
+      // Fetch real data from APIs in parallel using authenticated requests
+      const [servicesData, complaintsData, statsData] = await Promise.all([
+        authenticatedGet(`/api/services?customer_id=${userProfile.id}`).catch((error) => {
+          console.error('Failed to fetch services:', error);
+          return { services: [] };
         }),
-        fetch(`/api/complaints?customer_id=${userProfile.id}`, { 
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
+        authenticatedGet(`/api/complaints?customer_id=${userProfile.id}`).catch((error) => {
+          console.error('Failed to fetch complaints:', error);
+          return { complaints: [] };
         }),
-        fetch(`/api/dashboard/stats?customer_id=${userProfile.id}`, { 
-          cache: 'no-store',
-          headers: { 'Cache-Control': 'no-cache' }
+        authenticatedGet(`/api/dashboard/stats?customer_id=${userProfile.id}&role=${userProfile.role}`).catch((error) => {
+          console.error('Failed to fetch stats:', error);
+          return { overview: {} };
         })
       ]);
 
       // Handle services
-      if (servicesResponse.ok) {
-        const servicesData = await servicesResponse.json();
-        setServiceRequests(servicesData.services || []);
-      } else {
-        console.warn('Services API not available, using empty array');
-        setServiceRequests([]);
-      }
+      setServiceRequests(servicesData.services || []);
 
       // Handle complaints
-      if (complaintsResponse.ok) {
-        const complaintsData = await complaintsResponse.json();
-        setComplaints(complaintsData.complaints || []);
-      } else {
-        console.warn('Complaints API not available, using empty array');
-        setComplaints([]);
-      }
-
+      setComplaints(complaintsData.complaints || []);
       // Handle stats
-      if (statsResponse.ok) {
-        const statsData = await statsResponse.json();
-        setStats(statsData.stats || {
-          activeServices: 0,
-          completedServices: 0,
-          openComplaints: 0,
-          totalSpent: 0
-        });
-      } else {
-        console.warn('Stats API not available, using default stats');
-        setStats({
-          activeServices: 0,
-          completedServices: 0,
-          openComplaints: 0,
-          totalSpent: 0
-        });
-      }
+      setStats({
+        activeServices: statsData.overview?.activeServices || 0,
+        completedServices: statsData.overview?.completedServices || 0,
+        openComplaints: statsData.overview?.myComplaints || 0,
+        totalSpent: statsData.overview?.totalSpent || 0
+      });
 
     } catch (err: any) {
       console.error('❌ Error loading customer dashboard:', err);
@@ -181,7 +158,7 @@ export function CustomerDashboard() {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       success({ title: 'Signed out successfully' });
-      router.push('/signin');
+      router.replace('/');
     } catch (err: any) {
       showError({ title: 'Sign out failed', message: err.message });
     }

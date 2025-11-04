@@ -1,5 +1,6 @@
 import { supabase } from './supabase';
 import { UserRole } from './supabase';
+import { authenticatedGet, authenticatedPost, authenticatedPatch, authenticatedDelete } from './auth-client';
 export interface CreateUserData {
   email: string;
   password: string;
@@ -24,17 +25,7 @@ export interface UserProfile {
 // Create a new user (Admin only) - Now uses API route
 export async function createUser(userData: CreateUserData): Promise<{ success: boolean; user?: any; error?: string }> {
   try {
-    const response = await fetch('/api/admin/users', {
-      method: 'POST',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify(userData)
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Failed to create user' };
-    }
+    const result = await authenticatedPost('/api/admin/users', userData);
     return { success: true, user: result.user };
   } catch (error) {
     console.error('Unexpected error creating user:', error);
@@ -44,11 +35,7 @@ export async function createUser(userData: CreateUserData): Promise<{ success: b
 // Get all users (Admin only) - Now uses API route
 export async function getAllUsers(): Promise<{ success: boolean; users?: UserProfile[]; error?: string }> {
   try {
-    const response = await fetch('/api/admin/users');
-    const result = await response.json();
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Failed to fetch users' };
-    }
+    const result = await authenticatedGet('/api/admin/users');
     return { success: true, users: result.users || [] };
   } catch (error) {
     console.error('Unexpected error fetching users:', error);
@@ -58,17 +45,7 @@ export async function getAllUsers(): Promise<{ success: boolean; users?: UserPro
 // Update user profile (Admin only) - Now uses API route
 export async function updateUser(userId: string, updates: Partial<CreateUserData>): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   try {
-    const response = await fetch('/api/admin/users', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId, updates })
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Failed to update user' };
-    }
+    const result = await authenticatedPatch(`/api/admin/users?id=${userId}`, updates);
     return { success: true, user: result.user };
   } catch (error) {
     console.error('Unexpected error updating user:', error);
@@ -78,32 +55,15 @@ export async function updateUser(userId: string, updates: Partial<CreateUserData
 // Toggle user active status (Admin only) - Now uses API route
 export async function toggleUserStatus(userId: string): Promise<{ success: boolean; user?: UserProfile; error?: string }> {
   try {
-    // First get current status from local state or make a call to get current user
-    const getUserResponse = await fetch('/api/admin/users');
-    const getUserResult = await getUserResponse.json();
-    if (!getUserResponse.ok) {
-      return { success: false, error: 'Failed to get current user status' };
-    }
+    // First get current status
+    const getUserResult = await authenticatedGet('/api/admin/users');
     const currentUser = getUserResult.users?.find((u: UserProfile) => u.id === userId);
     if (!currentUser) {
       return { success: false, error: 'User not found' };
     }
     // Toggle the status
     const newStatus = !currentUser.is_active;
-    const response = await fetch('/api/admin/users', {
-      method: 'PATCH',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ 
-        userId, 
-        updates: { is_active: newStatus }
-      })
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Failed to toggle user status' };
-    }
+    const result = await authenticatedPatch(`/api/admin/users?id=${userId}`, { is_active: newStatus });
     return { success: true, user: result.user };
   } catch (error) {
     console.error('Unexpected error toggling user status:', error);
@@ -113,17 +73,7 @@ export async function toggleUserStatus(userId: string): Promise<{ success: boole
 // Delete user (Admin only) - Now uses API route
 export async function deleteUser(userId: string): Promise<{ success: boolean; error?: string }> {
   try {
-    const response = await fetch('/api/admin/users', {
-      method: 'DELETE',
-      headers: {
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({ userId })
-    });
-    const result = await response.json();
-    if (!response.ok) {
-      return { success: false, error: result.error || 'Failed to delete user' };
-    }
+    await authenticatedDelete(`/api/admin/users?id=${userId}`);
     return { success: true };
   } catch (error) {
     console.error('Unexpected error deleting user:', error);

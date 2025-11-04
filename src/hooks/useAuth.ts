@@ -85,9 +85,9 @@ export function useAuth() {
           error?.message?.includes('AuthSessionMissingError')) {
 
         // Only redirect if not already on auth pages
-        const authPages = ['/signin', '/signup', '/reset-password', '/update-password'];
+        const authPages = ['/', '/signup', '/reset-password', '/update-password'];
         if (!authPages.some(page => pathname?.startsWith(page))) {
-          router.push('/signin');
+          router.replace('/');
         }
         return true;
       }
@@ -135,9 +135,9 @@ export function useAuth() {
         // Handle token refresh errors
         if (event === 'TOKEN_REFRESHED' && !session) {
 
-          const authPages = ['/signin', '/signup', '/reset-password', '/update-password'];
+          const authPages = ['/', '/signup', '/reset-password', '/update-password'];
           if (!authPages.some(page => pathname?.startsWith(page))) {
-            router.push('/signin');
+            router.replace('/');
           }
         }
 
@@ -252,19 +252,27 @@ export function useAuth() {
       throw new Error('User not authenticated');
     }
 
-    const { data, error } = await supabase
-      .from('users')
-      .update(updates)
-      .eq('id', user.id)
-      .select()
-      .single();
+    try {
+      const { data, error } = await supabase
+        .from('users')
+        .update({
+          ...updates,
+          updated_at: new Date().toISOString()
+        })
+        .eq('id', user.id)
+        .select()
+        .single();
 
-    if (error) {
-      throw error;
+      if (error) {
+        throw error;
+      }
+
+      setUserProfile(data);
+      return { data, error: null };
+    } catch (error) {
+      console.error('Profile update error:', error);
+      return { data: null, error };
     }
-
-    setUserProfile(data);
-    return data;
   };
 
   return {

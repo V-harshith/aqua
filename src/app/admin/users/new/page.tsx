@@ -8,6 +8,9 @@ import Link from 'next/link';
 import { createUser } from '@/lib/userService';
 import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
 
+// Force dynamic rendering for this page
+export const dynamic = 'force-dynamic';
+
 interface CreateUserForm {
   email: string;
   full_name: string;

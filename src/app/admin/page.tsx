@@ -1,10 +1,13 @@
 'use client';
 
+export const dynamic = 'force-dynamic';
+
 import { useState, useEffect } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { RoleGuard } from '@/components/auth/RoleGuard';
 import UserManagement from '@/components/admin/UserManagement';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
+import { authenticatedGet } from '@/lib/auth-client';
 
 interface AdminStats {
   totalUsers: number;
@@ -29,11 +32,8 @@ export default function AdminPage() {
   useEffect(() => {
     const fetchStats = async () => {
       try {
-        const response = await fetch('/api/admin/stats');
-        if (response.ok) {
-          const data = await response.json();
-          setStats(data);
-        }
+        const data = await authenticatedGet('/api/admin/stats');
+        setStats(data);
       } catch (error) {
         console.error('Error fetching admin stats:', error);
       } finally {

@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import { Suspense } from 'react';
 import { useSearchParams, useRouter } from 'next/navigation';
 import { useAuthContext } from '@/context/AuthContext';
@@ -17,7 +20,7 @@ function AccessDeniedContent() {
   };
   const handleSignOut = async () => {
     await signOut();
-    router.push('/signin');
+    router.replace('/');
   };
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50">

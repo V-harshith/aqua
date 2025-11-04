@@ -5,6 +5,7 @@ import { Card } from '../ui/Card';
 import Button from '../ui/Button';
 import { useAuth } from '../../hooks/useAuth';
 import { useToast } from '../../hooks/useToast';
+import { authenticatedGet } from '../../lib/auth-client';
 import { supabase } from '../../lib/supabase';
 import { useRouter } from 'next/navigation';
 
@@ -60,32 +61,32 @@ export const TechnicianDashboard: React.FC = () => {
     try {
       setIsLoading(true);
 
-      // Fetch assigned and in-progress services for this technician
-      const servicesResponse = await fetch(`/api/services?assigned_technician=${user?.id}&status=assigned,in_progress`);
-      if (servicesResponse.ok) {
-        const servicesData = await servicesResponse.json();
-        const jobs = servicesData.services || [];
-        setAssignedJobs(jobs);
+      // Fetch assigned and in-progress services for this technician using authenticated requests
+      const [servicesData, completedData] = await Promise.all([
+        authenticatedGet(`/api/services?assigned_technician=${user?.id}&status=assigned,in_progress`).catch((error) => {
+          console.error('Failed to fetch assigned services:', error);
+          return { services: [] };
+        }),
+        authenticatedGet(`/api/services?assigned_technician=${user?.id}&status=completed`).catch((error) => {
+          console.error('Failed to fetch completed services:', error);
+          return { services: [] };
+        })
+      ]);
+      
+      const jobs = servicesData.services || [];
+      setAssignedJobs(jobs);
 
-        // Calculate real-time stats
-        const assigned = jobs.filter((j: ServiceJob) => j.status === 'assigned').length;
-        const inProgress = jobs.filter((j: ServiceJob) => j.status === 'in_progress').length;
+      // Calculate real-time stats
+      const assigned = jobs.filter((j: ServiceJob) => j.status === 'assigned').length;
+      const inProgress = jobs.filter((j: ServiceJob) => j.status === 'in_progress').length;
+      const completed = completedData.services?.length || 0;
 
-        // Get completed jobs count separately
-        const completedResponse = await fetch(`/api/services?assigned_technician=${user?.id}&status=completed`);
-        if (completedResponse.ok) {
-          const completedData = await completedResponse.json();
-          const completed = completedData.services?.length || 0;
-
-          setStats({
-            assignedJobs: assigned,
-            inProgressJobs: inProgress,
-            completedJobs: completed,
-            avgRating: 4.5
-          });
-        }
-
-      }
+      setStats({
+        assignedJobs: assigned,
+        inProgressJobs: inProgress,
+        completedJobs: completed,
+        avgRating: 4.5
+      });
     } catch (error) {
       console.error('Error loading technician data:', error);
       showError({ title: 'Error', message: 'Failed to load dashboard data' });
@@ -129,7 +130,7 @@ export const TechnicianDashboard: React.FC = () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       showSuccess({ title: 'Signed out successfully' });
-      router.push('/signin');
+      router.replace('/');
     } catch (err: any) {
       showError({ title: 'Sign out failed', message: err.message });
     }

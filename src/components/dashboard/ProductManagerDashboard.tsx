@@ -254,7 +254,7 @@ export const ProductManagerDashboard: React.FC = () => {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
       showSuccess({ title: 'Signed out successfully' });
-      router.push('/signin');
+      router.replace('/');
     } catch (err: any) {
       showError({ title: 'Sign out failed', message: err.message });
     }

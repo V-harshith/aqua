@@ -12,7 +12,7 @@ export function ManagerDashboard() {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) throw error;
-      router.push('/signin');
+      router.replace('/');
     } catch (err: any) {
       console.error('Sign out failed:', err);
     }

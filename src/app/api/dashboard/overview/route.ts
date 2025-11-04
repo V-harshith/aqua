@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -10,184 +11,154 @@ const supabaseAdmin = createClient(
     }
   }
 );
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
-    const dashboardType = searchParams.get('type') || 'admin';
-    const userId = searchParams.get('userId');
-    let stats = {};
-    let activities = [];
-    switch (dashboardType) {
-      case 'admin':
-        stats = await getAdminStats();
-        activities = await getAdminActivities();
-        break;
-      case 'product_manager':
-        stats = await getProductManagerStats();
-        activities = await getProductActivities();
-        break;
-      case 'service_manager':
-        stats = await getServiceManagerStats();
-        activities = await getServiceActivities();
-        break;
-      case 'technician':
-        if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-        stats = await getTechnicianStats(userId);
-        activities = await getTechnicianActivities(userId);
-        break;
-      case 'customer':
-        if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-        stats = await getCustomerStats(userId);
-        activities = await getCustomerActivities(userId);
-        break;
-      case 'driver_manager':
-        if (!userId) return NextResponse.json({ error: 'User ID required' }, { status: 400 });
-        stats = await getDriverStats(userId);
-        activities = await getDriverActivities(userId);
-        break;
-      default:
-        return NextResponse.json({ error: 'Invalid dashboard type' }, { status: 400 });
+    const userId = searchParams.get('user_id');
+    const role = searchParams.get('role');
+
+    // Get overview data based on user role
+    let overviewData = {};
+
+    if (role === 'admin' || role === 'service_manager') {
+      // Admin/Manager overview
+      const [
+        servicesResult,
+        complaintsResult,
+        customersResult,
+        techniciansResult
+      ] = await Promise.all([
+        supabaseAdmin.from('services').select('status, priority, created_at'),
+        supabaseAdmin.from('complaints').select('status, priority, created_at'),
+        supabaseAdmin.from('customers').select('created_at'),
+        supabaseAdmin.from('users').select('created_at').eq('role', 'technician')
+      ]);
+
+      const services = servicesResult.data || [];
+      const complaints = complaintsResult.data || [];
+      const customers = customersResult.data || [];
+      const technicians = techniciansResult.data || [];
+
+      // Service status breakdown
+      const serviceStatusBreakdown = services.reduce((acc: any, service) => {
+        acc[service.status] = (acc[service.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Priority breakdown
+      const priorityBreakdown = services.reduce((acc: any, service) => {
+        acc[service.priority] = (acc[service.priority] || 0) + 1;
+        return acc;
+      }, {});
+
+      // Recent trends (last 30 days)
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+
+      const recentServices = services.filter(s => new Date(s.created_at) >= thirtyDaysAgo);
+      const recentComplaints = complaints.filter(c => new Date(c.created_at) >= thirtyDaysAgo);
+
+      overviewData = {
+        totals: {
+          services: services.length,
+          complaints: complaints.length,
+          customers: customers.length,
+          technicians: technicians.length
+        },
+        serviceStatusBreakdown,
+        priorityBreakdown,
+        recentTrends: {
+          newServices: recentServices.length,
+          newComplaints: recentComplaints.length,
+          period: '30 days'
+        }
+      };
+
+    } else if (role === 'technician' && userId) {
+      // Technician overview
+      const [
+        assignedServicesResult,
+        completedServicesResult
+      ] = await Promise.all([
+        supabaseAdmin.from('services').select('*').eq('assigned_technician', userId),
+        supabaseAdmin.from('services').select('*').eq('assigned_technician', userId).eq('status', 'completed')
+      ]);
+
+      const assignedServices = assignedServicesResult.data || [];
+      const completedServices = completedServicesResult.data || [];
+
+      // Status breakdown for technician's services
+      const myServiceStatusBreakdown = assignedServices.reduce((acc: any, service) => {
+        acc[service.status] = (acc[service.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      overviewData = {
+        totals: {
+          assignedServices: assignedServices.length,
+          completedServices: completedServices.length,
+          pendingServices: assignedServices.filter(s => s.status === 'pending').length,
+          inProgressServices: assignedServices.filter(s => s.status === 'in_progress').length
+        },
+        myServiceStatusBreakdown,
+        completionRate: assignedServices.length > 0 
+          ? Math.round((completedServices.length / assignedServices.length) * 100) 
+          : 0
+      };
+
+    } else if (role === 'customer' && userId) {
+      // Customer overview
+      const [
+        myServicesResult,
+        myComplaintsResult
+      ] = await Promise.all([
+        supabaseAdmin.from('services').select('*').eq('customer_id', userId),
+        supabaseAdmin.from('complaints').select('*').eq('customer_id', userId)
+      ]);
+
+      const myServices = myServicesResult.data || [];
+      const myComplaints = myComplaintsResult.data || [];
+
+      // Status breakdown for customer's services
+      const myServiceStatusBreakdown = myServices.reduce((acc: any, service) => {
+        acc[service.status] = (acc[service.status] || 0) + 1;
+        return acc;
+      }, {});
+
+      overviewData = {
+        totals: {
+          myServices: myServices.length,
+          myComplaints: myComplaints.length,
+          activeServices: myServices.filter(s => ['pending', 'assigned', 'in_progress'].includes(s.status)).length,
+          completedServices: myServices.filter(s => s.status === 'completed').length
+        },
+        myServiceStatusBreakdown
+      };
     }
+
+    // Get recent activity
+    const { data: recentActivity } = await supabaseAdmin
+      .from('services')
+      .select(`
+        id,
+        service_number,
+        status,
+        created_at,
+        customer:customers(business_name),
+        technician:users!services_assigned_technician_fkey(full_name)
+      `)
+      .order('created_at', { ascending: false })
+      .limit(10);
+
     return NextResponse.json({
-      success: true,
-      data: {
-        stats,
-        activities,
-        lastUpdated: new Date().toISOString()
-      }
+      overview: overviewData,
+      recentActivity: recentActivity || [],
+      timestamp: new Date().toISOString()
     });
+
   } catch (error) {
-    console.error('Dashboard API error:', error);
-    return NextResponse.json({ 
-      error: 'Failed to fetch dashboard data'
-    }, { status: 500 });
+    console.error('Dashboard overview error:', error);
+    return NextResponse.json({ error: 'Failed to fetch dashboard overview' }, { status: 500 });
   }
 }
-async function getAdminStats() {
-  const [
-    totalUsers,
-    activeUsers,
-    openComplaints
-  ] = await Promise.all([
-    supabaseAdmin.from('users').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('users').select('*', { count: 'exact', head: true }).eq('is_active', true),
-    supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }).in('status', ['open', 'assigned'])
-  ]);
-  return {
-    totalUsers: totalUsers.count || 0,
-    activeUsers: activeUsers.count || 0,
-    openComplaints: openComplaints.count || 0,
-    monthlyRevenue: 125000
-  };
-}
-async function getProductManagerStats() {
-  return {
-    totalProducts: 45,
-    activeProducts: 42,
-    lowStockProducts: 8,
-    outOfStockProducts: 3
-  };
-}
-async function getServiceManagerStats() {
-  const [
-    totalComplaints,
-    openComplaints
-  ] = await Promise.all([
-    supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }),
-    supabaseAdmin.from('complaints').select('*', { count: 'exact', head: true }).eq('status', 'open')
-  ]);
-  return {
-    totalComplaints: totalComplaints.count || 0,
-    openComplaints: openComplaints.count || 0,
-    pendingServices: 12,
-    completedToday: 8
-  };
-}
-async function getTechnicianStats(userId: string) {
-  return {
-    assignedJobs: 5,
-    completedJobs: 25,
-    pendingJobs: 3,
-    avgRating: 4.5
-  };
-}
-async function getCustomerStats(userId: string) {
-  return {
-    activeProducts: 3,
-    serviceRequests: 8,
-    complaints: 2,
-    totalSpent: 25000
-  };
-}
-async function getDriverStats(userId: string) {
-  return {
-    totalDistributions: 45,
-    completedToday: 3,
-    totalLiters: 15000,
-    efficiency: 95
-  };
-}
-async function getAdminActivities() {
-  const { data } = await supabaseAdmin
-    .from('complaints')
-    .select('id, complaint_number, title, status, created_at')
-    .order('created_at', { ascending: false })
-    .limit(5);
-  return data?.map(item => ({
-    id: item.id,
-    type: 'complaint',
-    title: item.title,
-    timestamp: item.created_at,
-    status: item.status
-  })) || [];
-}
-async function getProductActivities() {
-  return [{
-    id: '1',
-    type: 'product',
-    title: 'New product registered',
-    timestamp: new Date().toISOString(),
-    status: 'active'
-  }];
-}
-async function getServiceActivities() {
-  const { data } = await supabaseAdmin
-    .from('service_requests')
-    .select('id, request_number, status, created_at')
-    .order('created_at', { ascending: false })
-    .limit(5);
-  return data?.map(item => ({
-    id: item.id,
-    type: 'service',
-    title: `Service ${item.request_number}`,
-    timestamp: item.created_at,
-    status: item.status
-  })) || [];
-}
-async function getTechnicianActivities(userId: string) {
-  return [{
-    id: '1',
-    type: 'assignment',
-    title: 'Service assignment completed',
-    timestamp: new Date().toISOString(),
-    status: 'completed'
-  }];
-}
-async function getCustomerActivities(userId: string) {
-  return [{
-    id: '1',
-    type: 'service',
-    title: 'Service request submitted',
-    timestamp: new Date().toISOString(),
-    status: 'pending'
-  }];
-}
-async function getDriverActivities(userId: string) {
-  return [{
-    id: '1',
-    type: 'distribution',
-    title: 'Water distribution completed',
-    timestamp: new Date().toISOString(),
-    status: 'completed'
-  }];
-} 

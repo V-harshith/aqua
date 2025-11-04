@@ -1,5 +1,37 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { createClient } from '@supabase/supabase-js';
+
+// Verify user access (optional for backward compatibility)
+async function verifyUserAccess(request: NextRequest) {
+  try {
+    const authHeader = request.headers.get('authorization');
+    if (!authHeader?.startsWith('Bearer ')) {
+      return { user: null, userProfile: null };
+    }
+
+    const token = authHeader.split(' ')[1];
+    const { data: { user }, error } = await supabaseAdmin.auth.getUser(token);
+
+    if (error || !user) {
+      return { user: null, userProfile: null };
+    }
+
+    // Get user profile
+    const { data: userProfile, error: profileError } = await supabaseAdmin
+      .from('users')
+      .select('*')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !userProfile) {
+      return { user: null, userProfile: null };
+    }
+
+    return { user, userProfile };
+  } catch (error) {
+    return { user: null, userProfile: null };
+  }
+}
 const supabaseAdmin = createClient(
   process.env.NEXT_PUBLIC_SUPABASE_URL!,
   process.env.SUPABASE_SERVICE_ROLE_KEY!,
@@ -32,6 +64,10 @@ async function generateComplaintNumber(): Promise<string> {
 // GET - Fetch complaints
 export async function GET(request: NextRequest) {
   try {
+    // Verify user access (optional)
+    const authResult = await verifyUserAccess(request);
+    const { userProfile } = authResult;
+
     const { searchParams } = new URL(request.url);
     const customerId = searchParams.get('customer_id');
     const assignedTo = searchParams.get('assigned_to');
@@ -45,7 +81,16 @@ export async function GET(request: NextRequest) {
         assigned_user:users!complaints_assigned_to_fkey(full_name, email, phone)
       `)
       .order('created_at', { ascending: false });
-    // Apply filters
+    // Apply role-based filtering (if authenticated)
+    if (userProfile) {
+      if (userProfile.role === 'customer') {
+        query = query.eq('customer_id', userProfile.id);
+      } else if (userProfile.role === 'technician') {
+        query = query.eq('assigned_to', userProfile.id);
+      }
+    }
+
+    // Apply additional filters
     if (customerId) {
       query = query.eq('customer_id', customerId);
     }

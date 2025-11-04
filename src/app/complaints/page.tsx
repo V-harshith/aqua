@@ -1,4 +1,7 @@
 'use client';
+
+export const dynamic = 'force-dynamic';
+
 import { useState } from 'react';
 import { useAuthContext } from '@/context/AuthContext';
 import { RoleGuard } from '@/components/auth/RoleGuard';

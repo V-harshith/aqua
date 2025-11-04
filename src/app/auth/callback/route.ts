@@ -10,5 +10,5 @@ export async function GET(request: NextRequest) {
     return NextResponse.redirect(new URL(next, request.url))
   }
 
-  return NextResponse.redirect(new URL('/signin', request.url))
+  return NextResponse.redirect(new URL('/', request.url))
 }

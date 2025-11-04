@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { Card } from '../ui/Card';
 import { RoleBasedNavigation } from '../ui/RoleBasedNavigation';
 import { useAuth } from '../../hooks/useAuth';
+import { authenticatedGet } from '../../lib/auth-client';
 
 interface AdminStats {
   totalUsers: number;
@@ -27,11 +28,7 @@ export function AdminDashboard() {
     setLoading(true);
     setError(null);
     try {
-      const response = await fetch('/api/admin/stats');
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-      const data = await response.json();
+      const data = await authenticatedGet('/api/admin/stats');
       setStats(data);
     } catch (error) {
       console.error('Failed to fetch admin stats:', error);

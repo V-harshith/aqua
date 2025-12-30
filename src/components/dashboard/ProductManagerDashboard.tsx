@@ -92,11 +92,11 @@ export const ProductManagerDashboard: React.FC = () => {
 
   const loadProductStats = async () => {
     try {
-      const response = await fetch('/api/dashboard/overview?type=product_manager');
+      const response = await fetch('/api/inventory?action=stats');
       const result = await response.json();
 
       if (result.success) {
-        setStats(result.data.stats);
+        setStats(result.stats);
       }
     } catch (error) {
       console.error('Error loading product stats:', error);
@@ -134,28 +134,12 @@ export const ProductManagerDashboard: React.FC = () => {
 
   const loadInventoryMovements = async () => {
     try {
-      const mockMovements: InventoryMovement[] = [
-        {
-          id: '1',
-          product_name: 'Water Filter Cartridge Type A',
-          movement_type: 'in',
-          quantity: 50,
-          reason: 'Purchase order #PO-001',
-          timestamp: new Date().toISOString(),
-          user_name: 'Product Manager'
-        },
-        {
-          id: '2',
-          product_name: 'RO Membrane 75 GPD',
-          movement_type: 'out',
-          quantity: 5,
-          reason: 'Service installation',
-          timestamp: new Date().toISOString(),
-          user_name: 'Technician A'
-        }
-      ];
+      const response = await fetch('/api/inventory?action=movements');
+      const result = await response.json();
 
-      setRecentMovements(mockMovements);
+      if (result.success) {
+        setRecentMovements(result.movements || []);
+      }
     } catch (error) {
       console.error('Error loading inventory movements:', error);
       showError({ title: 'Failed to load inventory movements' });
@@ -249,17 +233,6 @@ export const ProductManagerDashboard: React.FC = () => {
     }).format(amount);
   };
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showSuccess({ title: 'Signed out successfully' });
-      router.replace('/');
-    } catch (err: any) {
-      showError({ title: 'Sign out failed', message: err.message });
-    }
-  };
-
   if (user?.role !== 'product_manager') {
     return (
       <Card className="p-6">
@@ -301,13 +274,6 @@ export const ProductManagerDashboard: React.FC = () => {
               disabled={isLoading}
             >
               {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
-            </Button>
-            <Button
-              onClick={handleSignOut}
-              variant="danger"
-              size="sm"
-            >
-              🚪 Sign Out
             </Button>
           </div>
         </div>
@@ -455,29 +421,29 @@ export const ProductManagerDashboard: React.FC = () => {
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="space-y-2">
-            <Button 
+            <Button
               onClick={() => window.location.href = '/products'}
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
-              🏭 Product Management
+              Product Management
             </Button>
-            <Button 
+            <Button
               onClick={() => window.location.href = '/products/new'}
               className="w-full bg-green-600 hover:bg-green-700"
             >
-              📦 Add New Product
+              Add New Product
             </Button>
-            <Button 
+            <Button
               onClick={() => window.location.href = '/inventory/restock'}
               className="w-full bg-orange-600 hover:bg-orange-700"
             >
-              📈 Restock Inventory
+              Restock Inventory
             </Button>
-            <Button 
+            <Button
               onClick={() => window.location.href = '/reports/inventory'}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              📊 Inventory Reports
+              Inventory Reports
             </Button>
           </div>
         </Card>

@@ -4,6 +4,7 @@ import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/lib/supabase';
 import Button from '@/components/ui/Button';
 import { Card, CardContent, CardHeader } from '@/components/ui/Card';
+import { useToast } from '@/hooks/useToast';
 interface WaterDistribution {
   id: string;
   distribution_date: string;
@@ -43,6 +44,7 @@ interface RouteLocation {
 }
 export const WaterDistributionDashboard: React.FC = () => {
   const { user } = useAuth();
+  const { success: showSuccess, error: showError } = useToast();
   const [distributions, setDistributions] = useState<WaterDistribution[]>([]);
   const [stats, setStats] = useState<DistributionStats>({
     totalDistributions: 0,
@@ -104,9 +106,7 @@ export const WaterDistributionDashboard: React.FC = () => {
         .limit(20);
       if (error && error.code !== 'PGRST116') {
         console.error('Error loading distributions:', error);
-        // Use mock data if table doesn't exist
-        setDistributions(getMockDistributions());
-        return;
+        throw error;
       }
       const transformedData = data?.map(d => ({
         id: d.id,
@@ -129,7 +129,7 @@ export const WaterDistributionDashboard: React.FC = () => {
       setDistributions(transformedData);
     } catch (error) {
       console.error('Error loading distributions:', error);
-      setDistributions(getMockDistributions());
+      showError({ title: 'Failed to load distributions' });
     }
   };
   const getMockDistributions = (): WaterDistribution[] => [
@@ -172,7 +172,7 @@ export const WaterDistributionDashboard: React.FC = () => {
       const totalLitersDelivered = distributions
         .filter(d => d.actual_liters)
         .reduce((sum, d) => sum + (d.actual_liters || 0), 0);
-      const averageEfficiency = totalLitersPlanned > 0 
+      const averageEfficiency = totalLitersPlanned > 0
         ? Math.round((totalLitersDelivered / totalLitersPlanned) * 100)
         : 0;
       setStats({
@@ -187,56 +187,44 @@ export const WaterDistributionDashboard: React.FC = () => {
     }
   };
   const loadRoutes = async () => {
-    // Mock routes data - in real implementation, this would come from a routes table
-    const mockRoutes: RouteLocation[] = [
-      {
-        id: '1',
-        route_name: 'Central District',
-        location_name: 'City Center',
-        address: 'Main Street, Central District',
-        estimated_liters: 3000,
-        priority: 'high',
-        last_delivery: '2024-01-20'
-      },
-      {
-        id: '2',
-        route_name: 'North Zone',
-        location_name: 'Industrial Area',
-        address: 'Industrial Park, North Zone',
-        estimated_liters: 4000,
-        priority: 'medium',
-        last_delivery: '2024-01-19'
-      },
-      {
-        id: '3',
-        route_name: 'South Sector',
-        location_name: 'Residential Complex',
-        address: 'Housing Society, South Sector',
-        estimated_liters: 2500,
-        priority: 'low',
-        last_delivery: '2024-01-18'
-      }
-    ];
-    setRoutes(mockRoutes);
+    try {
+      const { data, error } = await supabase
+        .from('routes')
+        .select('*')
+        .order('route_name');
+
+      if (error) throw error;
+
+      setRoutes(data || []);
+    } catch (error) {
+      console.error('Error loading routes:', error);
+      showError({ title: 'Failed to load routes' });
+    }
   };
   const loadDriversAndVehicles = async () => {
     try {
       // Load drivers
-      const { data: driversData } = await supabase
+      const { data: driversData, error: driverError } = await supabase
         .from('users')
         .select('id, full_name, phone')
         .eq('role', 'driver_manager')
         .eq('is_active', true);
+
+      if (driverError) throw driverError;
       setDrivers(driversData || []);
-      // Mock vehicles data - in real implementation, this would come from a vehicles table
-      const mockVehicles = [
-        { id: 'VEH-001', vehicle_number: 'KA-01-AB-1234', capacity: 5000, status: 'available' },
-        { id: 'VEH-002', vehicle_number: 'KA-01-AB-5678', capacity: 6000, status: 'in_use' },
-        { id: 'VEH-003', vehicle_number: 'KA-01-AB-9012', capacity: 4000, status: 'maintenance' }
-      ];
-      setVehicles(mockVehicles);
+
+      // Load vehicles
+      const { data: vehiclesData, error: vehicleError } = await supabase
+        .from('vehicles')
+        .select('*')
+        .order('vehicle_number');
+
+      if (vehicleError) throw vehicleError;
+      setVehicles(vehiclesData || []);
+
     } catch (error) {
       console.error('Error loading drivers and vehicles:', error);
+      showError({ title: 'Failed to load resources' });
     }
   };
   const createDistribution = async () => {
@@ -349,11 +337,10 @@ export const WaterDistributionDashboard: React.FC = () => {
             <button
               key={tab.id}
               onClick={() => setSelectedTab(tab.id as any)}
-              className={`py-2 px-4 border-b-2 font-medium text-sm ${
-                selectedTab === tab.id
-                  ? 'border-blue-500 text-blue-600'
-                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-              }`}
+              className={`py-2 px-4 border-b-2 font-medium text-sm ${selectedTab === tab.id
+                ? 'border-blue-500 text-blue-600'
+                : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                }`}
             >
               {tab.icon} {tab.label}
             </button>
@@ -440,7 +427,7 @@ export const WaterDistributionDashboard: React.FC = () => {
                       </p>
                     </div>
                     <span className={`px-3 py-1 rounded-full text-xs font-medium ${getStatusColor(distribution.status)}`}>
-                      {distribution.status.replace('_', ' ').toUpperCase()}
+                      {(distribution.status || 'pending').replace('_', ' ').toUpperCase()}
                     </span>
                   </div>
                 ))}
@@ -467,7 +454,7 @@ export const WaterDistributionDashboard: React.FC = () => {
                       <div className="flex items-center gap-3 mb-2">
                         <h3 className="text-lg font-semibold text-gray-900">{distribution.route_name}</h3>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(distribution.status)}`}>
-                          {distribution.status.replace('_', ' ').toUpperCase()}
+                          {(distribution.status || 'pending').replace('_', ' ').toUpperCase()}
                         </span>
                       </div>
                       <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-4">
@@ -558,7 +545,7 @@ export const WaterDistributionDashboard: React.FC = () => {
                       <p className="text-sm text-gray-600">{route.location_name}</p>
                     </div>
                     <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(route.priority)}`}>
-                      {route.priority.toUpperCase()}
+                      {(route.priority || 'medium').toUpperCase()}
                     </span>
                   </div>
                   <div className="space-y-2">
@@ -615,17 +602,16 @@ export const WaterDistributionDashboard: React.FC = () => {
                       <h3 className="text-lg font-semibold text-gray-900">{vehicle.vehicle_number}</h3>
                       <p className="text-sm text-gray-600">Capacity: {vehicle.capacity}L</p>
                     </div>
-                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                      vehicle.status === 'available' ? 'bg-green-100 text-green-800' :
+                    <span className={`px-2 py-1 rounded-full text-xs font-medium ${vehicle.status === 'available' ? 'bg-green-100 text-green-800' :
                       vehicle.status === 'in_use' ? 'bg-yellow-100 text-yellow-800' :
-                      'bg-red-100 text-red-800'
-                    }`}>
+                        'bg-red-100 text-red-800'
+                      }`}>
                       {vehicle.status.toUpperCase()}
                     </span>
                   </div>
                   <div className="space-y-2">
                     <p className="text-sm text-gray-600">
-                      <span className="font-medium">Status:</span> {vehicle.status.replace('_', ' ')}
+                      <span className="font-medium">Status:</span> {(vehicle.status || 'active').replace('_', ' ')}
                     </p>
                     <p className="text-sm text-gray-600">
                       <span className="font-medium">Type:</span> Water Tanker

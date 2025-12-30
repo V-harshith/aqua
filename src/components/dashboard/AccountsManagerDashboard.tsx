@@ -59,11 +59,30 @@ export const AccountsManagerDashboard: React.FC = () => {
   const loadDashboardData = async () => {
     setIsLoading(true);
     try {
-      await Promise.all([
-        loadFinancialStats(),
-        loadRecentInvoices(),
-        loadPaymentSummary()
-      ]);
+      const { data: { session } } = await supabase.auth.getSession();
+      const headers = {
+        'Authorization': `Bearer ${session?.access_token}`
+      };
+
+      // Fetch stats
+      const statsRes = await fetch('/api/accounts?type=stats', { headers }).then(r => r.json());
+      if (statsRes.success) setStats(statsRes.stats);
+
+      // Fetch invoices
+      const invRes = await fetch('/api/accounts?type=invoices', { headers }).then(r => r.json());
+      if (invRes.success) setRecentInvoices(invRes.invoices);
+
+      // Fetch payments
+      const payRes = await fetch('/api/accounts?type=payments', { headers }).then(r => r.json());
+      if (payRes.success) {
+        setPaymentSummary(payRes.payments.map((p: any) => ({
+          date: p.payment_date,
+          totalCollected: p.amount,
+          invoicesPaid: 1,
+          averagePaymentTime: 0
+        })));
+      }
+
     } catch (error) {
       console.error('Error loading dashboard data:', error);
       showError({ title: 'Failed to load dashboard data' });
@@ -72,90 +91,30 @@ export const AccountsManagerDashboard: React.FC = () => {
     }
   };
 
-  const loadFinancialStats = async () => {
-    try {
-      const today = new Date().toISOString().split('T')[0];
-      const currentMonth = new Date().toISOString().slice(0, 7); // YYYY-MM format
-
-      // Mock financial data - in real implementation, this would come from invoices/payments tables
-      const mockStats = {
-        totalRevenue: 125000,
-        monthlyRevenue: 18500,
-        pendingPayments: 12500,
-        overduePayments: 3200,
-        collectionsToday: 4500,
-        outstandingInvoices: 28
-      };
-
-      setStats(mockStats);
-    } catch (error) {
-      console.error('Error loading financial stats:', error);
-    }
-  };
-
-  const loadRecentInvoices = async () => {
-    try {
-      // Mock invoice data - replace with actual invoice table queries
-      const mockInvoices: RecentInvoice[] = [
-        {
-          id: '1',
-          invoice_number: 'INV-2024-001',
-          amount: 2500,
-          status: 'pending',
-          due_date: '2024-01-30',
-          customer: { business_name: 'ABC Water Solutions' },
-          created_at: '2024-01-15'
-        },
-        {
-          id: '2',
-          invoice_number: 'INV-2024-002',
-          amount: 1800,
-          status: 'paid',
-          due_date: '2024-01-25',
-          customer: { business_name: 'XYZ Corporation' },
-          created_at: '2024-01-14'
-        },
-        {
-          id: '3',
-          invoice_number: 'INV-2024-003',
-          amount: 3200,
-          status: 'overdue',
-          due_date: '2024-01-20',
-          customer: { business_name: 'Tech Industries Ltd' },
-          created_at: '2024-01-10'
-        }
-      ];
-
-      setRecentInvoices(mockInvoices);
-    } catch (error) {
-      console.error('Error loading recent invoices:', error);
-    }
-  };
-
-  const loadPaymentSummary = async () => {
-    try {
-      // Mock payment summary data for the last 7 days
-      const mockSummary: PaymentSummary[] = [
-        { date: '2024-01-22', totalCollected: 4500, invoicesPaid: 3, averagePaymentTime: 12 },
-        { date: '2024-01-21', totalCollected: 2800, invoicesPaid: 2, averagePaymentTime: 15 },
-        { date: '2024-01-20', totalCollected: 1200, invoicesPaid: 1, averagePaymentTime: 8 },
-        { date: '2024-01-19', totalCollected: 3600, invoicesPaid: 4, averagePaymentTime: 18 },
-        { date: '2024-01-18', totalCollected: 2200, invoicesPaid: 2, averagePaymentTime: 10 },
-        { date: '2024-01-17', totalCollected: 1800, invoicesPaid: 1, averagePaymentTime: 22 },
-        { date: '2024-01-16', totalCollected: 5400, invoicesPaid: 5, averagePaymentTime: 14 }
-      ];
-
-      setPaymentSummary(mockSummary);
-    } catch (error) {
-      console.error('Error loading payment summary:', error);
-    }
-  };
+  const loadFinancialStats = async () => { /* Removed mock util */ };
+  const loadRecentInvoices = async () => { /* Removed mock util */ };
+  const loadPaymentSummary = async () => { /* Removed mock util */ };
 
   const generateInvoice = async (customerId: string, amount: number) => {
     try {
-      // Mock invoice generation - replace with actual invoice creation logic
-      showSuccess({ title: 'Invoice generated successfully' });
-      loadDashboardData();
+      const response = await fetch('/api/accounts', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'create_invoice',
+          customer_id: customerId,
+          amount,
+          due_date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString()
+        })
+      });
+
+      const result = await response.json();
+      if (result.success) {
+        showSuccess({ title: 'Invoice generated successfully' });
+        loadDashboardData();
+      } else {
+        throw new Error(result.error);
+      }
     } catch (error: any) {
       console.error('Error generating invoice:', error);
       showError({ title: error.message || 'Failed to generate invoice' });
@@ -187,17 +146,6 @@ export const AccountsManagerDashboard: React.FC = () => {
       style: 'currency',
       currency: 'INR'
     }).format(amount);
-  };
-
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showSuccess({ title: 'Signed out successfully' });
-      router.replace('/');
-    } catch (err: any) {
-      showError({ title: 'Sign out failed', message: err.message });
-    }
   };
 
   if (user?.role !== 'accounts_manager') {
@@ -241,13 +189,6 @@ export const AccountsManagerDashboard: React.FC = () => {
               disabled={isLoading}
             >
               {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
-            </Button>
-            <Button
-              onClick={handleSignOut}
-              variant="danger"
-              size="sm"
-            >
-              🚪 Sign Out
             </Button>
           </div>
         </div>
@@ -374,23 +315,23 @@ export const AccountsManagerDashboard: React.FC = () => {
         <Card className="p-6">
           <h3 className="text-lg font-semibold text-gray-800 mb-4">Quick Actions</h3>
           <div className="space-y-2">
-            <Button 
+            <Button
               onClick={() => window.location.href = '/invoices/new'}
               className="w-full bg-green-600 hover:bg-green-700"
             >
-              💰 Generate Invoice
+              Generate Invoice
             </Button>
-            <Button 
+            <Button
               onClick={() => window.location.href = '/payments'}
               className="w-full bg-blue-600 hover:bg-blue-700"
             >
               💳 Process Payment
             </Button>
-            <Button 
+            <Button
               onClick={() => window.location.href = '/reports/financial'}
               className="w-full bg-purple-600 hover:bg-purple-700"
             >
-              📊 Financial Reports
+              Financial Reports
             </Button>
           </div>
         </Card>

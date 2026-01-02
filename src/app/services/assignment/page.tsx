@@ -38,7 +38,7 @@ interface Technician {
 export default function ServiceAssignmentPage() {
   const { user } = useAuthContext();
   const { success: showSuccess, error: showError } = useToast();
-  
+
   const [services, setServices] = useState<Service[]>([]);
   const [technicians, setTechnicians] = useState<Technician[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -55,7 +55,7 @@ export default function ServiceAssignmentPage() {
     try {
       const response = await fetch('/api/services?status=pending');
       const result = await response.json();
-      
+
       if (response.ok) {
         setServices(result.services || []);
       } else {
@@ -70,7 +70,7 @@ export default function ServiceAssignmentPage() {
     try {
       const response = await fetch('/api/technicians');
       const result = await response.json();
-      
+
       if (response.ok) {
         setTechnicians(result.technicians || []);
       } else {
@@ -90,7 +90,7 @@ export default function ServiceAssignmentPage() {
     }
 
     setIsAssigning(true);
-    
+
     try {
       const response = await fetch(`/api/services?id=${selectedService}`, {
         method: 'PATCH',
@@ -227,12 +227,12 @@ export default function ServiceAssignmentPage() {
                           {service.service_number}
                         </h3>
                         <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
-                          {service.priority.toUpperCase()}
+                          {(service.priority || 'medium').toUpperCase()}
                         </span>
                       </div>
-                      
+
                       <p className="text-gray-600 mb-2">{service.description}</p>
-                      
+
                       <div className="grid grid-cols-2 gap-4 text-sm text-gray-500">
                         <div>
                           <span className="font-medium">Customer:</span> {service.customer?.business_name || 'N/A'}
@@ -242,7 +242,7 @@ export default function ServiceAssignmentPage() {
                         </div>
                       </div>
                     </div>
-                    
+
                     <div className="flex gap-2">
                       <Button
                         variant="outline"

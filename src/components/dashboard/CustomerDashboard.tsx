@@ -100,10 +100,10 @@ export function CustomerDashboard() {
       });
 
     } catch (err: any) {
-      console.error('❌ Error loading customer dashboard:', err);
-      showError({ 
-        title: 'Failed to load dashboard', 
-        message: 'Unable to fetch real-time data. Please check your connection and try again.' 
+      console.error('Error loading customer dashboard:', err);
+      showError({
+        title: 'Failed to load dashboard',
+        message: 'Unable to fetch real-time data. Please check your connection and try again.'
       });
 
       // Set empty states on error
@@ -153,17 +153,6 @@ export function CustomerDashboard() {
     });
   };
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      success({ title: 'Signed out successfully' });
-      router.replace('/');
-    } catch (err: any) {
-      showError({ title: 'Sign out failed', message: err.message });
-    }
-  };
-
   if (isLoading) {
     return (
       <div className="p-6">
@@ -196,13 +185,6 @@ export function CustomerDashboard() {
               disabled={isLoading}
             >
               {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
-            </Button>
-            <Button
-              onClick={handleSignOut}
-              variant="danger"
-              size="sm"
-            >
-              🚪 Sign Out
             </Button>
           </div>
         </div>
@@ -244,18 +226,17 @@ export function CustomerDashboard() {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'services', label: 'My Services', icon: '🔧' },
-              { id: 'complaints', label: 'My Complaints', icon: '📝' }
+              { id: 'overview', label: 'Overview', icon: '' },
+              { id: 'services', label: 'My Services', icon: '' },
+              { id: 'complaints', label: 'My Complaints', icon: '' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 <span className="mr-2">{tab.icon}</span>
                 {tab.label}
@@ -336,7 +317,11 @@ export function CustomerDashboard() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">All Services ({serviceRequests.length})</h3>
-                <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
+                <Button
+                  size="sm"
+                  className="bg-blue-600 hover:bg-blue-700"
+                  onClick={() => router.push('/services/new')}
+                >
                   ➕ Request Service
                 </Button>
               </div>
@@ -385,7 +370,11 @@ export function CustomerDashboard() {
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
                 <h3 className="text-lg font-semibold">All Complaints ({complaints.length})</h3>
-                <Button size="sm" className="bg-red-600 hover:bg-red-700">
+                <Button
+                  size="sm"
+                  className="bg-red-600 hover:bg-red-700"
+                  onClick={() => router.push('/complaints/new')}
+                >
                   ➕ File Complaint
                 </Button>
               </div>

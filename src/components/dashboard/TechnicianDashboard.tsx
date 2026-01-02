@@ -125,17 +125,6 @@ export const TechnicianDashboard: React.FC = () => {
     }
   };
 
-  const handleSignOut = async () => {
-    try {
-      const { error } = await supabase.auth.signOut();
-      if (error) throw error;
-      showSuccess({ title: 'Signed out successfully' });
-      router.replace('/');
-    } catch (err: any) {
-      showError({ title: 'Sign out failed', message: err.message });
-    }
-  };
-
   const getStatusColor = (status: string) => {
     switch (status?.toLowerCase()) {
       case 'assigned': return 'bg-blue-100 text-blue-800';
@@ -197,13 +186,6 @@ export const TechnicianDashboard: React.FC = () => {
               disabled={isLoading}
             >
               {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
-            </Button>
-            <Button
-              onClick={handleSignOut}
-              variant="danger"
-              size="sm"
-            >
-              🚪 Sign Out
             </Button>
           </div>
         </div>

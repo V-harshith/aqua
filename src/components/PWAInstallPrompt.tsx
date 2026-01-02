@@ -23,8 +23,8 @@ export const PWAInstallPrompt: React.FC = () => {
   const [showPrompt, setShowPrompt] = useState(false);
   useEffect(() => {
     // Check if already installed using proper type checking
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        window.navigator.standalone === true) {
+    if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) {
       setIsInstalled(true);
       return;
     }
@@ -93,7 +93,7 @@ export const PWAInstallPrompt: React.FC = () => {
     <div className="fixed bottom-4 left-4 right-4 z-50 md:left-auto md:right-4 md:max-w-sm">
       <div className="bg-white rounded-lg shadow-xl border border-gray-200 p-4 animate-slide-up">
         <div className="flex items-start gap-3">
-          <div className="text-2xl">📱</div>
+
           <div className="flex-1">
             <h3 className="font-semibold text-gray-900 mb-1">
               Install Project Aqua
@@ -105,16 +105,16 @@ export const PWAInstallPrompt: React.FC = () => {
               Install for offline access, faster loading, and notifications.
             </p>
             <div className="flex gap-2">
-              <Button 
-                size="sm" 
+              <Button
+                size="sm"
                 onClick={handleInstallClick}
                 className="bg-blue-600 hover:bg-blue-700 text-white flex-1"
               >
                 Install App
               </Button>
-              <Button 
-                size="sm" 
-                variant="secondary" 
+              <Button
+                size="sm"
+                variant="secondary"
                 onClick={handleDismiss}
                 className="px-3"
               >
@@ -133,8 +133,8 @@ export const usePWAInstallStatus = () => {
   const [isInstallable, setIsInstallable] = useState(false);
   useEffect(() => {
     // Check if already installed using proper type checking
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        window.navigator.standalone === true) {
+    if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) {
       setIsInstalled(true);
     }
     const handleBeforeInstallPrompt = () => {

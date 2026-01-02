@@ -1,10 +1,12 @@
 import { NextResponse } from 'next/server';
 import type { NextRequest } from 'next/server';
 
-export function middleware(request: NextRequest) {
-  // Force all pages to be dynamic to avoid static rendering issues
+export async function middleware(request: NextRequest) {
   const response = NextResponse.next();
+
+  // Force all pages to be dynamic to avoid static rendering issues
   response.headers.set('x-middleware-cache', 'no-cache');
+
   return response;
 }
 
@@ -16,7 +18,8 @@ export const config = {
      * - _next/static (static files)
      * - _next/image (image optimization files)
      * - favicon.ico (favicon file)
+     * - public files
      */
-    '/((?!api|_next/static|_next/image|favicon.ico).*)',
+    '/((?!api|_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)',
   ],
 };

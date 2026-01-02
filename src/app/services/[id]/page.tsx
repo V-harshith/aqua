@@ -49,7 +49,7 @@ export default function ServiceDetailPage() {
   const router = useRouter();
   const { userProfile } = useAuthContext();
   const { success: showSuccess, error: showError } = useToast();
-  
+
   const [service, setService] = useState<Service | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [isUpdating, setIsUpdating] = useState(false);
@@ -79,7 +79,7 @@ export default function ServiceDetailPage() {
     try {
       setIsUpdating(true);
       const updateData: any = { status: newStatus };
-      
+
       if (newStatus === 'completed') {
         updateData.completed_date = new Date().toISOString();
       }
@@ -118,13 +118,13 @@ export default function ServiceDetailPage() {
 
   const canUpdateStatus = () => {
     if (!userProfile || !service) return false;
-    
+
     // Admin and service managers can always update
     if (['admin', 'service_manager'].includes(userProfile.role)) return true;
-    
+
     // Technicians can update their assigned services
     if (userProfile.role === 'technician' && service.technician?.id === userProfile.id) return true;
-    
+
     return false;
   };
 
@@ -169,14 +169,14 @@ export default function ServiceDetailPage() {
           <h1 className="text-3xl font-bold text-gray-900">{service.service_number}</h1>
           <div className="flex items-center gap-3 mt-2">
             <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getStatusColor(service.status)}`}>
-              {service.status.replace('_', ' ').toUpperCase()}
+              {(service.status || 'pending').replace('_', ' ').toUpperCase()}
             </span>
-            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(service.priority)}`}>
-              {service.priority.toUpperCase()} PRIORITY
+            <span className={`px-3 py-1 rounded-full text-sm font-medium border ${getPriorityColor(service.priority || '')}`}>
+              {(service.priority || 'medium').toUpperCase()} PRIORITY
             </span>
           </div>
         </div>
-        
+
         {canUpdateStatus() && (
           <div className="flex gap-2">
             {service.status === 'assigned' && (
@@ -218,12 +218,12 @@ export default function ServiceDetailPage() {
               <label className="text-sm font-medium text-gray-500">Service Type</label>
               <p className="text-gray-900">{service.service_type}</p>
             </div>
-            
+
             <div>
               <label className="text-sm font-medium text-gray-500">Description</label>
               <p className="text-gray-900">{service.description}</p>
             </div>
-            
+
             <div className="grid grid-cols-2 gap-4">
               <div>
                 <label className="text-sm font-medium text-gray-500">Created</label>
@@ -263,17 +263,17 @@ export default function ServiceDetailPage() {
                   <label className="text-sm font-medium text-gray-500">Customer Code</label>
                   <p className="text-gray-900">{service.customer.customer_code}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Business Name</label>
                   <p className="text-gray-900">{service.customer.business_name}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Contact Person</label>
                   <p className="text-gray-900">{service.customer.contact_person}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Address</label>
                   <p className="text-gray-900">{service.customer.billing_address}</p>
@@ -297,12 +297,12 @@ export default function ServiceDetailPage() {
                   <label className="text-sm font-medium text-gray-500">Name</label>
                   <p className="text-gray-900">{service.technician.full_name}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Email</label>
                   <p className="text-gray-900">{service.technician.email}</p>
                 </div>
-                
+
                 <div>
                   <label className="text-sm font-medium text-gray-500">Phone</label>
                   <p className="text-gray-900">{service.technician.phone}</p>
@@ -345,7 +345,7 @@ export default function ServiceDetailPage() {
                   <p className="font-medium">{service.complaint.complaint_number}</p>
                   <p className="text-gray-600">{service.complaint.title}</p>
                   <span className={`inline-block px-2 py-1 rounded-full text-xs font-medium mt-1 ${getPriorityColor(service.complaint.priority)}`}>
-                    {service.complaint.priority.toUpperCase()}
+                    {(service.complaint.priority || 'medium').toUpperCase()}
                   </span>
                 </div>
               </div>

@@ -19,98 +19,98 @@ const navigationItems: NavItem[] = [
   {
     label: 'Dashboard',
     href: '/dashboard',
-    icon: '📊',
+    icon: '',
     description: 'Overview and metrics',
     roles: ['admin', 'dept_head', 'driver_manager', 'service_manager', 'accounts_manager', 'product_manager', 'technician', 'customer']
   },
   {
     label: 'Admin Dashboard',
     href: '/admin/dashboard',
-    icon: '🎛️',
+    icon: '',
     description: 'Enhanced admin control panel',
     roles: ['admin', 'dept_head']
   },
   {
     label: 'Admin Panel',
     href: '/admin',
-    icon: '⚙️',
+    icon: '',
     description: 'System administration',
     roles: ['admin']
   },
   {
     label: 'User Management',
     href: '/admin/users',
-    icon: '👥',
+    icon: '',
     description: 'Manage system users',
     roles: ['admin', 'dept_head']
   },
   {
     label: 'Customer Management',
     href: '/customers',
-    icon: '🏢',
+    icon: '',
     description: 'Customer accounts and profiles',
     roles: ['admin', 'dept_head', 'service_manager']
   },
   {
     label: 'Complaints',
     href: '/complaints',
-    icon: '📝',
+    icon: '',
     description: 'Customer complaints and issues',
     roles: ['admin', 'dept_head', 'service_manager', 'technician', 'customer']
   },
   {
     label: 'Services',
     href: '/services',
-    icon: '🔧',
+    icon: '',
     description: 'Service requests and schedules',
     roles: ['admin', 'dept_head', 'service_manager', 'dispatcher', 'technician', 'customer']
   },
   {
     label: 'Service Assignment',
     href: '/services/assignment',
-    icon: '📋',
+    icon: '',
     description: 'Assign technicians to service requests',
     roles: ['admin', 'dept_head', 'service_manager']
   },
   {
     label: 'Water Distribution',
     href: '/distribution',
-    icon: '🚚',
+    icon: '',
     description: 'Water distribution management',
     roles: ['admin', 'dept_head', 'driver_manager']
   },
   {
     label: 'Driver Management',
     href: '/driver',
-    icon: '🚛',
+    icon: '',
     description: 'Water distribution and driver operations',
     roles: ['admin', 'dept_head', 'driver_manager']
   },
   {
     label: 'Accounts & Payments',
     href: '/accounts',
-    icon: '💰',
+    icon: '',
     description: 'Financial management',
     roles: ['admin', 'dept_head', 'accounts_manager']
   },
   {
     label: 'Products & Inventory',
     href: '/products',
-    icon: '📦',
+    icon: '',
     description: 'Product catalog and inventory',
     roles: ['admin', 'dept_head', 'product_manager']
   },
   {
     label: 'Reports',
     href: '/reports',
-    icon: '📈',
+    icon: '',
     description: 'Analytics and reports',
     roles: ['admin', 'dept_head', 'service_manager', 'accounts_manager', 'driver_manager', 'product_manager']
   },
   {
     label: 'Notifications',
     href: '/notifications',
-    icon: '🔔',
+    icon: '',
     description: 'Real-time notifications and alerts',
     roles: ['admin', 'dept_head', 'service_manager', 'accounts_manager', 'product_manager', 'driver_manager', 'technician', 'customer']
   }
@@ -136,12 +136,12 @@ export function RoleBasedNavigation({
   }
 
   // Filter navigation items based on user role
-  const allowedItems = navigationItems.filter(item => 
+  const allowedItems = navigationItems.filter(item =>
     item.roles.includes(userProfile.role)
   );
 
-  const baseClasses = orientation === 'horizontal' 
-    ? 'flex flex-wrap gap-2' 
+  const baseClasses = orientation === 'horizontal'
+    ? 'flex flex-wrap gap-2'
     : 'space-y-1';
 
   return (
@@ -192,7 +192,7 @@ export function SidebarNavigation() {
       <div className="p-4 border-b border-gray-200">
         <div className="flex items-center space-x-3">
           <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-            <span className="text-white font-bold">💧</span>
+            <span className="text-white font-bold">W</span>
           </div>
           <div>
             <h1 className="text-lg font-bold text-gray-900">Aqua Management</h1>
@@ -203,9 +203,9 @@ export function SidebarNavigation() {
 
       {/* Navigation */}
       <div className="flex-1 overflow-y-auto p-4">
-        <RoleBasedNavigation 
-          orientation="vertical" 
-          showIcons={true} 
+        <RoleBasedNavigation
+          orientation="vertical"
+          showIcons={true}
           showDescriptions={false}
         />
       </div>
@@ -230,7 +230,6 @@ export function SidebarNavigation() {
           onClick={() => signOut()}
           className="w-full flex items-center px-3 py-2 text-sm font-medium text-red-600 rounded-lg hover:bg-red-50 transition-colors duration-200"
         >
-          <span className="mr-3">🚪</span>
           Sign Out
         </button>
       </div>
@@ -252,16 +251,16 @@ export function HeaderNavigation() {
           {/* Logo */}
           <div className="flex items-center space-x-3">
             <div className="w-8 h-8 bg-blue-600 rounded-lg flex items-center justify-center">
-              <span className="text-white font-bold">💧</span>
+              <span className="text-white font-bold">W</span>
             </div>
             <h1 className="text-lg font-bold text-gray-900">Aqua Management</h1>
           </div>
 
           {/* Desktop Navigation */}
           <div className="hidden md:block">
-            <RoleBasedNavigation 
-              orientation="horizontal" 
-              showIcons={true} 
+            <RoleBasedNavigation
+              orientation="horizontal"
+              showIcons={true}
               showDescriptions={false}
             />
           </div>
@@ -295,10 +294,10 @@ export function HeaderNavigation() {
 
                 {/* Mobile Navigation */}
                 <div className="md:hidden">
-                  <RoleBasedNavigation 
+                  <RoleBasedNavigation
                     className="px-2 py-2"
-                    orientation="vertical" 
-                    showIcons={true} 
+                    orientation="vertical"
+                    showIcons={true}
                     showDescriptions={false}
                   />
                 </div>
@@ -311,7 +310,7 @@ export function HeaderNavigation() {
                     }}
                     className="w-full text-left px-4 py-2 text-sm text-red-600 hover:bg-red-50"
                   >
-                    🚪 Sign Out
+                    Sign Out
                   </button>
                 </div>
               </div>

@@ -54,7 +54,7 @@ export function TableSkeleton({ rows = 5, columns = 4 }: { rows?: number, column
             ))}
           </div>
         </div>
-        
+
         {/* Rows */}
         {Array.from({ length: rows }).map((_, rowIndex) => (
           <div key={rowIndex} className="px-6 py-4 border-b border-gray-200 last:border-b-0">
@@ -96,14 +96,14 @@ export function FormSkeleton() {
     <div className="bg-white rounded-lg border border-gray-200 p-6">
       <div className="animate-pulse space-y-6">
         <div className="h-6 bg-gray-200 rounded w-1/4"></div>
-        
+
         {Array.from({ length: 4 }).map((_, i) => (
           <div key={i} className="space-y-2">
             <div className="h-4 bg-gray-200 rounded w-1/6"></div>
             <div className="h-10 bg-gray-200 rounded"></div>
           </div>
         ))}
-        
+
         <div className="flex gap-4 pt-4">
           <div className="h-10 bg-gray-200 rounded flex-1"></div>
           <div className="h-10 bg-gray-200 rounded flex-1"></div>
@@ -137,10 +137,10 @@ export function ListSkeleton({ items = 5 }: { items?: number }) {
 }
 
 // Button loading state
-export function ButtonLoading({ children, isLoading, ...props }: { 
-  children: React.ReactNode, 
+export function ButtonLoading({ children, isLoading, ...props }: {
+  children: React.ReactNode,
   isLoading: boolean,
-  [key: string]: any 
+  [key: string]: any
 }) {
   return (
     <button {...props} disabled={isLoading || props.disabled}>
@@ -157,16 +157,16 @@ export function ButtonLoading({ children, isLoading, ...props }: {
 }
 
 // Empty state component
-export function EmptyState({ 
-  icon = '📭', 
-  title, 
-  description, 
-  action 
-}: { 
-  icon?: string, 
-  title: string, 
-  description: string, 
-  action?: React.ReactNode 
+export function EmptyState({
+  icon = '📭',
+  title,
+  description,
+  action
+}: {
+  icon?: string,
+  title: string,
+  description: string,
+  action?: React.ReactNode
 }) {
   return (
     <div className="text-center py-12">
@@ -179,20 +179,20 @@ export function EmptyState({
 }
 
 // Error state component
-export function ErrorState({ 
-  title = 'Something went wrong', 
+export function ErrorState({
+  title = 'Something went wrong',
   description = 'We encountered an error while loading this content.',
   onRetry,
   showRetry = true
-}: { 
-  title?: string, 
-  description?: string, 
+}: {
+  title?: string,
+  description?: string,
   onRetry?: () => void,
-  showRetry?: boolean 
+  showRetry?: boolean
 }) {
   return (
     <div className="text-center py-12">
-      <div className="text-red-500 text-6xl mb-4">⚠️</div>
+
       <h3 className="text-lg font-semibold text-gray-900 mb-2">{title}</h3>
       <p className="text-gray-600 mb-6 max-w-md mx-auto">{description}</p>
       {showRetry && onRetry && (

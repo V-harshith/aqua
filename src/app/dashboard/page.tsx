@@ -5,7 +5,6 @@ export const dynamic = 'force-dynamic';
 import { useAuthContext } from '@/context/AuthContext';
 import { useRouter } from 'next/navigation';
 import { useEffect } from 'react';
-import { AdminDashboard } from '@/components/dashboard/AdminDashboard';
 import { EnhancedAdminDashboard } from '@/components/dashboard/EnhancedAdminDashboard';
 import { CustomerDashboard } from '@/components/dashboard/CustomerDashboard';
 import { ManagerDashboard } from '@/components/dashboard/ManagerDashboard';
@@ -13,16 +12,29 @@ import { ServiceManagerDashboard } from '@/components/dashboard/ServiceManagerDa
 import { AccountsManagerDashboard } from '@/components/dashboard/AccountsManagerDashboard';
 import { ProductManagerDashboard } from '@/components/dashboard/ProductManagerDashboard';
 import { TechnicianDashboard } from '@/components/dashboard/TechnicianDashboard';
-import { DashboardNavigation } from '@/components/ui/DashboardNavigation';
+import { DashboardLayout } from '@/components/ui/DashboardLayout';
 import { supabase } from '@/lib/supabase';
 export default function DashboardPage() {
   const { user, userProfile, loading } = useAuthContext();
   const router = useRouter();
+
+  // Debug logging
+  useEffect(() => {
+    console.log('🔍 Dashboard State:', {
+      loading,
+      hasUser: !!user,
+      hasProfile: !!userProfile,
+      role: userProfile?.role,
+      userId: user?.id
+    });
+  }, [user, userProfile, loading]);
+
   useEffect(() => {
     if (!loading && !user) {
       router.replace('/');
     }
   }, [user, loading, router]);
+
   const handleSignOut = async () => {
     try {
       await supabase.auth.signOut();
@@ -91,31 +103,13 @@ export default function DashboardPage() {
   if (loading) {
     return (
       <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto"></div>
-          <p className="mt-4 text-gray-600">Loading dashboard...</p>
-          <p className="text-sm text-gray-500">Please wait while we load your data</p>
-        </div>
-      </div>
-    );
-  }
-  if (!user) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-center">
-          <p className="text-gray-600">Redirecting to sign in...</p>
-        </div>
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600"></div>
       </div>
     );
   }
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Navigation */}
-      <DashboardNavigation />
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto py-6 px-4 sm:px-6 lg:px-8">
-        {renderRoleBasedDashboard()}
-      </main>
-    </div>
+    <DashboardLayout showBackButton={false}>
+      {renderRoleBasedDashboard()}
+    </DashboardLayout>
   );
 } 

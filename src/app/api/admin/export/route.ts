@@ -13,6 +13,30 @@ const supabaseAdmin = createClient(
 );
 export async function GET(request: NextRequest) {
   try {
+    // Authentication and RBAC guard
+    const authHeader = request.headers.get('Authorization');
+    const token = authHeader?.startsWith('Bearer ') ? authHeader.split(' ')[1] : null;
+    if (!token) {
+      return NextResponse.json({ error: 'Unauthorized: missing token' }, { status: 401 });
+    }
+
+    // Validate user using the token
+    const { data: { user }, error: authError } = await supabaseAdmin.auth.getUser(token);
+    if (authError || !user) {
+      return NextResponse.json({ error: 'Unauthorized: invalid token' }, { status: 401 });
+    }
+
+    // Check user role (only admin/dept_head allowed to export)
+    const { data: profile, error: profileError } = await supabaseAdmin
+      .from('users')
+      .select('role')
+      .eq('id', user.id)
+      .single();
+
+    if (profileError || !profile || !['admin', 'dept_head'].includes(profile.role)) {
+      return NextResponse.json({ error: 'Forbidden: insufficient role' }, { status: 403 });
+    }
+
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type') || 'users';
     const format = searchParams.get('format') || 'csv';

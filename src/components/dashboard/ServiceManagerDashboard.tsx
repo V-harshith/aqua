@@ -95,8 +95,8 @@ export const ServiceManagerDashboard: React.FC = () => {
         const pending = allServices.filter((s: ServiceRequest) => s.status === 'pending').length;
         const inProgress = allServices.filter((s: ServiceRequest) => s.status === 'in_progress').length;
         const emergency = allServices.filter((s: ServiceRequest) => s.priority === 'emergency').length;
-        const completed = allServices.filter((s: ServiceRequest) => 
-          s.status === 'completed' && 
+        const completed = allServices.filter((s: ServiceRequest) =>
+          s.status === 'completed' &&
           s.created_at.startsWith(today)
         ).length;
 
@@ -152,9 +152,9 @@ export const ServiceManagerDashboard: React.FC = () => {
       });
 
       if (response.ok) {
-        showSuccess({ 
-          title: 'Service Assigned', 
-          message: 'Service has been assigned to technician successfully' 
+        showSuccess({
+          title: 'Service Assigned',
+          message: 'Service has been assigned to technician successfully'
         });
         loadDashboardData(); // Refresh data
       } else {
@@ -162,9 +162,9 @@ export const ServiceManagerDashboard: React.FC = () => {
       }
     } catch (error) {
       console.error('Error assigning service:', error);
-      showError({ 
-        title: 'Error', 
-        message: 'Failed to assign service' 
+      showError({
+        title: 'Error',
+        message: 'Failed to assign service'
       });
     }
   };
@@ -286,32 +286,32 @@ export const ServiceManagerDashboard: React.FC = () => {
       <Card className="p-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-4">Quick Actions</h3>
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
-          <Button 
-            onClick={() => window.location.href = '/services/assignment'} 
+          <Button
+            onClick={() => window.location.href = '/services/assignment'}
             className="w-full bg-blue-600 hover:bg-blue-700"
           >
-            👥 Assign Services
+            Assign Services
           </Button>
-          <Button 
-            onClick={() => window.location.href = '/technicians'} 
-            variant="secondary" 
+          <Button
+            onClick={() => window.location.href = '/technicians'}
+            variant="secondary"
             className="w-full"
           >
-            🔧 Manage Technicians
+            Manage Technicians
           </Button>
-          <Button 
-            onClick={() => window.location.href = '/services'} 
-            variant="secondary" 
+          <Button
+            onClick={() => window.location.href = '/services'}
+            variant="secondary"
             className="w-full"
           >
             📋 All Services
           </Button>
-          <Button 
-            onClick={() => window.location.href = '/reports'} 
-            variant="outline" 
+          <Button
+            onClick={() => window.location.href = '/reports'}
+            variant="outline"
             className="w-full"
           >
-            📊 Service Reports
+            Service Reports
           </Button>
         </div>
       </Card>
@@ -321,18 +321,17 @@ export const ServiceManagerDashboard: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="flex space-x-8 px-6">
             {[
-              { key: 'overview', label: '📊 Overview', count: null },
-              { key: 'services', label: '🔧 Service Requests', count: services.length },
-              { key: 'technicians', label: '👥 Technicians', count: technicians.length }
+              { key: 'overview', label: 'Overview', count: null },
+              { key: 'services', label: 'Service Requests', count: services.length },
+              { key: 'technicians', label: 'Technicians', count: technicians.length }
             ].map(tab => (
               <button
                 key={tab.key}
                 onClick={() => setActiveTab(tab.key as any)}
-                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.key
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-2 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.key
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
                 {tab.label}
                 {tab.count !== null && (
@@ -357,32 +356,32 @@ export const ServiceManagerDashboard: React.FC = () => {
                     .filter(service => ['emergency', 'high'].includes(service.priority) && service.status === 'pending')
                     .slice(0, 5)
                     .map((service) => (
-                    <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
-                      <div className="flex-1">
-                        <div className="flex items-center space-x-3">
-                          <span className="text-lg">🔧</span>
-                          <div>
-                            <p className="font-medium text-gray-900">{service.service_type}</p>
-                            <p className="text-sm text-gray-600">
-                              {service.customer_name} • {formatDate(service.created_at)}
-                            </p>
+                      <div key={service.id} className="flex items-center justify-between p-3 border rounded-lg hover:bg-gray-50">
+                        <div className="flex-1">
+                          <div className="flex items-center space-x-3">
+
+                            <div>
+                              <p className="font-medium text-gray-900">{service.service_type}</p>
+                              <p className="text-sm text-gray-600">
+                                {service.customer_name} • {formatDate(service.created_at)}
+                              </p>
+                            </div>
                           </div>
                         </div>
+                        <div className="flex items-center space-x-2">
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
+                            {(service.priority || 'medium').toUpperCase()}
+                          </span>
+                          <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
+                            {(service.status || 'pending').replace('_', ' ').toUpperCase()}
+                          </span>
+                        </div>
                       </div>
-                      <div className="flex items-center space-x-2">
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
-                          {service.priority.toUpperCase()}
-                        </span>
-                        <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
-                          {service.status.replace('_', ' ').toUpperCase()}
-                        </span>
-                      </div>
-                    </div>
-                  ))}
+                    ))}
 
                   {services.filter(s => ['emergency', 'high'].includes(s.priority) && s.status === 'pending').length === 0 && (
                     <div className="text-center py-8">
-                      <div className="text-4xl mb-2">✅</div>
+
                       <p className="text-gray-600">No priority requests pending</p>
                       <p className="text-sm text-gray-500">All emergency and high priority services are handled</p>
                     </div>
@@ -397,11 +396,11 @@ export const ServiceManagerDashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Service Requests ({services.length})</h3>
-                <Button 
-                  onClick={() => window.location.href = '/services/assignment'} 
+                <Button
+                  onClick={() => window.location.href = '/services/assignment'}
                   className="bg-blue-600 hover:bg-blue-700"
                 >
-                  👥 Assign Services
+                  Assign Services
                 </Button>
               </div>
 
@@ -414,10 +413,10 @@ export const ServiceManagerDashboard: React.FC = () => {
                           <div className="flex items-center space-x-3 mb-2">
                             <h4 className="font-semibold text-lg">{service.service_type}</h4>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(service.status)}`}>
-                              {service.status.replace('_', ' ').toUpperCase()}
+                              {(service.status || 'pending').replace('_', ' ').toUpperCase()}
                             </span>
                             <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(service.priority)}`}>
-                              {service.priority.toUpperCase()} PRIORITY
+                              {(service.priority || 'medium').toUpperCase()} PRIORITY
                             </span>
                           </div>
 
@@ -457,7 +456,7 @@ export const ServiceManagerDashboard: React.FC = () => {
                               onClick={() => window.location.href = `/services/assignment?service_id=${service.id}`}
                               className="bg-blue-600 hover:bg-blue-700"
                             >
-                              👥 Assign Tech
+                              Assign Tech
                             </Button>
                           )}
                         </div>
@@ -466,10 +465,10 @@ export const ServiceManagerDashboard: React.FC = () => {
                   ))
                 ) : (
                   <div className="text-center py-12">
-                    <div className="text-6xl mb-4">🔧</div>
+
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No service requests</h3>
                     <p className="text-gray-600 mb-4">New service requests will appear here automatically</p>
-                    <Button 
+                    <Button
                       onClick={loadDashboardData}
                       variant="secondary"
                     >
@@ -486,12 +485,12 @@ export const ServiceManagerDashboard: React.FC = () => {
             <div className="space-y-4">
               <div className="flex justify-between items-center">
                 <h3 className="text-lg font-semibold text-gray-900">Available Technicians ({technicians.length})</h3>
-                <Button 
-                  onClick={() => window.location.href = '/technicians'} 
+                <Button
+                  onClick={() => window.location.href = '/technicians'}
                   variant="outline"
                   size="sm"
                 >
-                  👥 Manage All
+                  Manage All
                 </Button>
               </div>
 
@@ -504,9 +503,8 @@ export const ServiceManagerDashboard: React.FC = () => {
                         <div className="space-y-2">
                           <div className="flex justify-between text-sm">
                             <span className="text-gray-600">Status:</span>
-                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${
-                              tech.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                            }`}>
+                            <span className={`px-2 py-1 rounded-full text-xs font-medium ${tech.is_available ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                              }`}>
                               {tech.is_available ? 'Available' : 'Busy'}
                             </span>
                           </div>
@@ -528,7 +526,7 @@ export const ServiceManagerDashboard: React.FC = () => {
                   ))
                 ) : (
                   <div className="col-span-full text-center py-12">
-                    <div className="text-6xl mb-4">👥</div>
+
                     <h3 className="text-lg font-medium text-gray-900 mb-2">No technicians available</h3>
                     <p className="text-gray-600">Technician information will appear here</p>
                   </div>

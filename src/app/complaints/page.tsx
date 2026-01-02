@@ -9,6 +9,7 @@ import ComplaintForm from '@/components/complaints/ComplaintForm';
 import ComplaintsList from '@/components/complaints/ComplaintsList';
 import Button from '@/components/ui/Button';
 import { Card, CardContent } from '@/components/ui/Card';
+import { DashboardLayout } from '@/components/ui/DashboardLayout';
 export default function ComplaintsPage() {
   const { userProfile, canManageComplaints } = useAuthContext();
   const [showForm, setShowForm] = useState(false);
@@ -39,7 +40,7 @@ export default function ComplaintsPage() {
         </div>
       }
     >
-      <div className="min-h-screen bg-gray-50 p-4 md:p-8">
+      <DashboardLayout>
         <div className="max-w-7xl mx-auto">
           {/* Header */}
           <div className="mb-8">
@@ -153,7 +154,7 @@ export default function ComplaintsPage() {
             </div>
           )}
         </div>
-      </div>
+      </DashboardLayout>
     </RoleGuard>
   );
 } 

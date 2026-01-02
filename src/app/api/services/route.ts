@@ -84,7 +84,23 @@ export async function GET(request: NextRequest) {
     // Apply role-based filtering (if authenticated)
     if (userProfile) {
       if (userProfile.role === 'customer') {
-        query = query.eq('customer_id', userProfile.id);
+        // For customers, first get their customer record to get the proper customer_id
+        const { data: customerRecord } = await supabaseAdmin
+          .from('customers')
+          .select('id')
+          .eq('user_id', userProfile.id)
+          .single();
+
+        if (customerRecord) {
+          query = query.eq('customer_id', customerRecord.id);
+        } else {
+          // No customer record found, return empty result
+          return NextResponse.json({
+            services: [],
+            count: 0,
+            timestamp: new Date().toISOString()
+          });
+        }
       } else if (userProfile.role === 'technician') {
         query = query.eq('assigned_technician', userProfile.id);
       }
@@ -105,7 +121,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching services:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ 
+    return NextResponse.json({
       services: services || [],
       count: services?.length || 0,
       timestamp: new Date().toISOString()
@@ -123,15 +139,14 @@ export async function POST(request: NextRequest) {
       customer_id,
       service_type,
       description,
-      priority = 'medium',
       scheduled_date,
       estimated_hours,
       complaint_id
     } = body;
     // Validate required fields
     if (!customer_id || !service_type || !description) {
-      return NextResponse.json({ 
-        error: 'Customer ID, service type, and description are required' 
+      return NextResponse.json({
+        error: 'Customer ID, service type, and description are required'
       }, { status: 400 });
     }
     // Generate service number
@@ -143,7 +158,6 @@ export async function POST(request: NextRequest) {
         customer_id,
         service_type,
         description,
-        priority,
         scheduled_date,
         estimated_hours,
         complaint_id,
@@ -159,7 +173,7 @@ export async function POST(request: NextRequest) {
       console.error('Error creating service:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       service,
       message: 'Service created successfully'

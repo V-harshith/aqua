@@ -54,21 +54,21 @@ export const SimpleDashboard: React.FC = () => {
       id: 'service-request',
       title: 'Request Service',
       description: 'Schedule maintenance',
-      icon: '🔧',
+      icon: '',
       action: () => window.open('/services', '_blank')
     },
     {
       id: 'complaint',
       title: 'Report Issue',
       description: 'Log a complaint',
-      icon: '📝',
+      icon: '',
       action: () => window.open('/complaints', '_blank')
     },
     {
       id: 'products',
       title: 'My Products',
       description: 'View your devices',
-      icon: '📦',
+      icon: '',
       action: () => window.open('/products', '_blank')
     },
     {
@@ -263,9 +263,9 @@ export const SimpleDashboard: React.FC = () => {
   };
   const getActivityIcon = (type: string) => {
     switch (type) {
-      case 'service': return '🔧';
-      case 'complaint': return '📝';
-      case 'product': return '📦';
+      case 'service': return '';
+      case 'complaint': return '';
+      case 'product': return '';
       default: return '📄';
     }
   };
@@ -326,7 +326,7 @@ export const SimpleDashboard: React.FC = () => {
         {stats.openComplaints > 0 && (
           <div className="mb-6 p-4 bg-red-50 border border-red-200 rounded-lg">
             <div className="flex items-center">
-              <span className="text-red-500 text-2xl mr-3">⚠️</span>
+
               <div className="flex-1">
                 <h3 className="font-semibold text-red-900">Active Issues</h3>
                 <p className="text-red-800 text-sm">You have {stats.openComplaints} open complaint(s)</p>
@@ -348,22 +348,19 @@ export const SimpleDashboard: React.FC = () => {
             {quickActions.map(action => (
               <div
                 key={action.id}
-                className={`cursor-pointer transition-all hover:shadow-md ${
-                  action.urgent ? 'ring-2 ring-red-200 bg-red-50' : ''
-                }`}
+                className={`cursor-pointer transition-all hover:shadow-md ${action.urgent ? 'ring-2 ring-red-200 bg-red-50' : ''
+                  }`}
                 onClick={action.action}
               >
                 <Card>
                   <div className="p-4 text-center">
                     <div className="text-3xl mb-2">{action.icon}</div>
-                    <div className={`font-semibold text-sm ${
-                      action.urgent ? 'text-red-700' : 'text-gray-900'
-                    }`}>
+                    <div className={`font-semibold text-sm ${action.urgent ? 'text-red-700' : 'text-gray-900'
+                      }`}>
                       {action.title}
                     </div>
-                    <div className={`text-xs mt-1 ${
-                      action.urgent ? 'text-red-600' : 'text-gray-500'
-                    }`}>
+                    <div className={`text-xs mt-1 ${action.urgent ? 'text-red-600' : 'text-gray-500'
+                      }`}>
                       {action.description}
                     </div>
                   </div>
@@ -470,7 +467,7 @@ export const SimpleDashboard: React.FC = () => {
                 variant="secondary"
                 className="w-full py-4"
               >
-                📝 Submit Emergency Request
+                Submit Emergency Request
                 <div className="text-xs text-gray-500">Online emergency form</div>
               </Button>
               <Button

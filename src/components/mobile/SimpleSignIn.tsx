@@ -49,7 +49,7 @@ export const SimpleSignIn: React.FC = () => {
             {/* Phone Input */}
             <div>
               <label className="block text-lg font-medium text-gray-700 mb-3">
-                <span className="block">📱 फोन नंबर</span>
+                <span className="block">फोन नंबर</span>
                 <span className="text-sm text-gray-500">Phone Number</span>
               </label>
               <input
@@ -137,13 +137,13 @@ export const SimpleSignIn: React.FC = () => {
               }}
               className="py-3 bg-white/30 hover:bg-white/40 text-white rounded-xl text-sm backdrop-blur-sm transition-all"
             >
-              🔧 Technician
+              Technician
             </button>
           </div>
         </div>
         {/* Version Info */}
         <div className="text-center mt-6 text-white/70 text-sm">
-          प्रोजेक्ट अक्वा v1.0 | Made with ❤️ for India
+          प्रोजेक्ट अक्वा v1.0 | Made with love for India
         </div>
       </div>
     </div>

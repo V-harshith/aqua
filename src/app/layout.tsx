@@ -21,13 +21,13 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Project Aqua - Water Management",
-  description: "Water pump management system for rural Indian communities",
+  title: "Water Management System",
+  description: "Comprehensive water service management platform",
   manifest: "/manifest.json",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Project Aqua",
+    title: "Water Management",
   },
 };
 
@@ -36,7 +36,7 @@ export const viewport: Viewport = {
   initialScale: 1,
   maximumScale: 1,
   userScalable: false,
-  themeColor: "#3B82F6",
+  themeColor: "#2563eb",
 };
 
 export default function RootLayout({

@@ -28,7 +28,7 @@ export class ErrorBoundary extends Component<Props, State> {
   componentDidCatch(error: Error, errorInfo: ErrorInfo) {
     console.error('Error Boundary caught an error:', error, errorInfo);
     this.setState({ error, errorInfo });
-    
+
     // Log to external service in production
     if (process.env.NODE_ENV === 'production') {
       // TODO: Send to error tracking service (Sentry, etc.)
@@ -54,7 +54,7 @@ export class ErrorBoundary extends Component<Props, State> {
           <Card className="w-full max-w-md">
             <CardHeader>
               <div className="text-center">
-                <div className="text-red-500 text-4xl mb-4">⚠️</div>
+
                 <h2 className="text-xl font-semibold text-gray-900">Something went wrong</h2>
                 <p className="text-sm text-gray-600 mt-2">
                   We're sorry, but something unexpected happened.
@@ -70,7 +70,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   </p>
                 </div>
               )}
-              
+
               <div className="flex gap-2">
                 <Button
                   onClick={this.handleReset}
@@ -86,7 +86,7 @@ export class ErrorBoundary extends Component<Props, State> {
                   Reload Page
                 </Button>
               </div>
-              
+
               <div className="text-center">
                 <button
                   onClick={() => window.location.href = '/'}
@@ -109,7 +109,7 @@ export class ErrorBoundary extends Component<Props, State> {
 export function useErrorHandler() {
   return (error: Error, errorInfo?: ErrorInfo) => {
     console.error('Error caught by hook:', error, errorInfo);
-    
+
     if (process.env.NODE_ENV === 'production') {
       // TODO: Send to error tracking service
     }

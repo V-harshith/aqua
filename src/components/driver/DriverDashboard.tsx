@@ -73,7 +73,7 @@ export const DriverDashboard: React.FC = () => {
 
   const loadDriverData = async () => {
     if (!user || user.role !== 'driver_manager') return;
-    
+
     setIsLoading(true);
     try {
       // Load real routes from database
@@ -117,7 +117,7 @@ export const DriverDashboard: React.FC = () => {
 
   const loadActiveDistribution = async () => {
     if (!user) return;
-    
+
     try {
       const { data, error } = await supabase
         .from('water_distributions')
@@ -139,17 +139,17 @@ export const DriverDashboard: React.FC = () => {
 
   const updateDeliveryStatus = async (routeId: string, newStatus: 'in_transit' | 'delivered' | 'failed') => {
     try {
-      setRoutes(prev => 
-        prev.map(route => 
-          route.id === routeId 
+      setRoutes(prev =>
+        prev.map(route =>
+          route.id === routeId
             ? { ...route, status: newStatus }
             : route
         )
       );
 
-      showSuccess({ 
-        title: 'Status Updated', 
-        message: `Delivery marked as ${newStatus.replace('_', ' ')}` 
+      showSuccess({
+        title: 'Status Updated',
+        message: `Delivery marked as ${newStatus.replace('_', ' ')}`
       });
 
       // Recalculate stats after status update
@@ -157,9 +157,9 @@ export const DriverDashboard: React.FC = () => {
 
     } catch (error) {
       console.error('Error updating delivery status:', error);
-      showError({ 
-        title: 'Error', 
-        message: 'Failed to update delivery status' 
+      showError({
+        title: 'Error',
+        message: 'Failed to update delivery status'
       });
     }
   };
@@ -167,15 +167,15 @@ export const DriverDashboard: React.FC = () => {
   const toggleDutyStatus = async () => {
     try {
       setIsOnDuty(!isOnDuty);
-      showSuccess({ 
-        title: 'Status Updated', 
-        message: `You are now ${!isOnDuty ? 'On Duty' : 'Off Duty'}` 
+      showSuccess({
+        title: 'Status Updated',
+        message: `You are now ${!isOnDuty ? 'On Duty' : 'Off Duty'}`
       });
     } catch (error) {
       console.error('Error updating duty status:', error);
-      showError({ 
-        title: 'Error', 
-        message: 'Failed to update duty status' 
+      showError({
+        title: 'Error',
+        message: 'Failed to update duty status'
       });
     }
   };
@@ -194,16 +194,16 @@ export const DriverDashboard: React.FC = () => {
       };
 
       setActiveDistribution(newDistribution);
-      showSuccess({ 
-        title: 'Distribution Started', 
-        message: 'Water distribution has been started successfully' 
+      showSuccess({
+        title: 'Distribution Started',
+        message: 'Water distribution has been started successfully'
       });
 
     } catch (error) {
       console.error('Error starting distribution:', error);
-      showError({ 
-        title: 'Error', 
-        message: 'Failed to start distribution' 
+      showError({
+        title: 'Error',
+        message: 'Failed to start distribution'
       });
     } finally {
       setIsStartingDistribution(false);
@@ -221,16 +221,16 @@ export const DriverDashboard: React.FC = () => {
         };
 
         setActiveDistribution(null);
-        showSuccess({ 
-          title: 'Distribution Completed', 
-          message: `Distribution completed with ${actualLiters}L delivered` 
+        showSuccess({
+          title: 'Distribution Completed',
+          message: `Distribution completed with ${actualLiters}L delivered`
         });
       }
     } catch (error) {
       console.error('Error ending distribution:', error);
-      showError({ 
-        title: 'Error', 
-        message: 'Failed to end distribution' 
+      showError({
+        title: 'Error',
+        message: 'Failed to end distribution'
       });
     }
   };
@@ -300,7 +300,7 @@ export const DriverDashboard: React.FC = () => {
               size="sm"
               disabled={isLoading}
             >
-              {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
+              {isLoading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>
         </div>
@@ -347,7 +347,7 @@ export const DriverDashboard: React.FC = () => {
                 <div>
                   <h4 className="font-medium text-blue-900">Active Distribution</h4>
                   <p className="text-sm text-blue-700">
-                    Started at {formatTime(activeDistribution.start_time)} • 
+                    Started at {formatTime(activeDistribution.start_time)} •
                     Route: {activeDistribution.route_details}
                   </p>
                   <p className="text-sm text-blue-700">
@@ -378,18 +378,17 @@ export const DriverDashboard: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'routes', label: 'Routes', icon: '🚛' },
-              { id: 'completed', label: 'Completed', icon: '✅' }
+              { id: 'overview', label: 'Overview', icon: '' },
+              { id: 'active', label: 'Active Routes', icon: '' },
+              { id: 'completed', label: 'Completed', icon: '' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
                     ? 'border-blue-500 text-blue-600'
                     : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                  }`}
               >
                 <span className="mr-2">{tab.icon}</span>
                 {tab.label}
@@ -429,7 +428,7 @@ export const DriverDashboard: React.FC = () => {
                     </div>
                     {route.notes && (
                       <div className="text-sm text-gray-600 mb-2">
-                        📝 {route.notes}
+                        {route.notes}
                       </div>
                     )}
                     <div className="flex items-center justify-between">
@@ -497,7 +496,7 @@ export const DriverDashboard: React.FC = () => {
                     </div>
                     {route.notes && (
                       <div className="text-sm text-gray-600 mb-2">
-                        📝 {route.notes}
+                        {route.notes}
                       </div>
                     )}
                     <div className="flex items-center space-x-2">
@@ -538,7 +537,7 @@ export const DriverDashboard: React.FC = () => {
                       <div className="flex items-center space-x-3">
                         <span className="font-medium">{route.route_name}</span>
                         <span className="px-2 py-1 rounded-full text-xs bg-green-100 text-green-800">
-                          ✅ Delivered
+                          Delivered
                         </span>
                       </div>
                       <div className="text-sm text-gray-500">

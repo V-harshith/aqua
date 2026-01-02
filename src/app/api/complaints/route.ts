@@ -84,7 +84,23 @@ export async function GET(request: NextRequest) {
     // Apply role-based filtering (if authenticated)
     if (userProfile) {
       if (userProfile.role === 'customer') {
-        query = query.eq('customer_id', userProfile.id);
+        // For customers, first get their customer record to get the proper customer_id
+        const { data: customerRecord } = await supabaseAdmin
+          .from('customers')
+          .select('id')
+          .eq('user_id', userProfile.id)
+          .single();
+
+        if (customerRecord) {
+          query = query.eq('customer_id', customerRecord.id);
+        } else {
+          // No customer record found, return empty result
+          return NextResponse.json({
+            complaints: [],
+            count: 0,
+            timestamp: new Date().toISOString()
+          });
+        }
       } else if (userProfile.role === 'technician') {
         query = query.eq('assigned_to', userProfile.id);
       }
@@ -108,7 +124,7 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching complaints:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ 
+    return NextResponse.json({
       complaints: complaints || [],
       count: complaints?.length || 0,
       timestamp: new Date().toISOString()
@@ -133,8 +149,8 @@ export async function POST(request: NextRequest) {
     } = body;
     // Validate required fields
     if (!customer_id || !title || !description) {
-      return NextResponse.json({ 
-        error: 'Customer ID, title, and description are required' 
+      return NextResponse.json({
+        error: 'Customer ID, title, and description are required'
       }, { status: 400 });
     }
     // Generate complaint number
@@ -161,7 +177,7 @@ export async function POST(request: NextRequest) {
       console.error('Error creating complaint:', error);
       return NextResponse.json({ error: error.message }, { status: 500 });
     }
-    return NextResponse.json({ 
+    return NextResponse.json({
       success: true,
       complaint,
       message: 'Complaint created successfully'

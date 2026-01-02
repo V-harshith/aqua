@@ -28,10 +28,8 @@ export const SystemLogs: React.FC = () => {
     }
   };
   const getActionIcon = (action: string) => {
-    if (action.includes('Start') || action.includes('running')) return '▶️';
-    if (action.includes('Stop') || action.includes('stopped')) return '⏹️';
-    if (action.includes('maintenance')) return '🔧';
-    return '📝';
+    // Icons removed for clean UI
+    return '';
   };
   const getActionColor = (action: string) => {
     if (action.includes('Start') || action.includes('running')) return 'bg-green-100 border-green-300';
@@ -60,7 +58,7 @@ export const SystemLogs: React.FC = () => {
               onClick={() => window.history.back()}
               className="text-2xl hover:bg-blue-500 p-2 rounded-lg transition-colors"
             >
-              ⬅️
+              Back
             </button>
             <div>
               <h1 className="text-xl font-bold">सिस्टम लॉग्स</h1>
@@ -104,7 +102,7 @@ export const SystemLogs: React.FC = () => {
               onClick={clearLogs}
               className="w-full py-3 bg-red-500 hover:bg-red-600 text-white rounded-xl font-medium"
             >
-              🗑️ सभी लॉग्स साफ करें / Clear All Logs
+              सभी लॉग्स साफ करें / Clear All Logs
             </Button>
           </div>
         )}
@@ -115,7 +113,7 @@ export const SystemLogs: React.FC = () => {
           </h2>
           {logs.length === 0 ? (
             <div className="bg-white rounded-xl p-8 text-center shadow-lg">
-              <div className="text-6xl mb-4">📝</div>
+
               <h3 className="text-xl font-bold text-gray-800 mb-2">
                 कोई लॉग्स नहीं मिले
               </h3>
@@ -125,8 +123,8 @@ export const SystemLogs: React.FC = () => {
             </div>
           ) : (
             logs.map((log) => (
-              <div 
-                key={log.id} 
+              <div
+                key={log.id}
                 className={`bg-white rounded-xl shadow-lg p-4 border-l-4 ${getActionColor(log.action)}`}
               >
                 <div className="flex items-start space-x-3">

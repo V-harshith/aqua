@@ -5,6 +5,7 @@ import { useAuthContext } from '@/context/AuthContext';
 import { supabase, Complaint } from '@/lib/supabase';
 import { Card, CardHeader, CardContent } from '@/components/ui/Card';
 import Button from '@/components/ui/Button';
+import { EmptyState } from '@/components/ui/EmptyState';
 type ComplaintWithDetails = Complaint & {
   customer?: {
     customer_code: string;
@@ -21,10 +22,10 @@ interface ComplaintsListProps {
   customerId?: string;
   limit?: number;
 }
-export default function ComplaintsList({ 
-  showActions = true, 
-  customerId, 
-  limit 
+export default function ComplaintsList({
+  showActions = true,
+  customerId,
+  limit
 }: ComplaintsListProps) {
   const { userProfile, canManageComplaints } = useAuthContext();
   const [complaints, setComplaints] = useState<ComplaintWithDetails[]>([]);
@@ -72,7 +73,7 @@ export default function ComplaintsList({
       }
       // Order by priority and created date
       query = query.order('priority', { ascending: false })
-                  .order('created_at', { ascending: false });
+        .order('created_at', { ascending: false });
       const { data, error } = await query;
       if (error) throw error;
       setComplaints(data || []);
@@ -84,8 +85,8 @@ export default function ComplaintsList({
     }
   };
   const updateComplaintStatus = async (
-    complaintId: string, 
-    newStatus: string, 
+    complaintId: string,
+    newStatus: string,
     assignTo?: string
   ) => {
     try {
@@ -150,41 +151,37 @@ export default function ComplaintsList({
           <div className="flex gap-2">
             <button
               onClick={() => setFilter('all')}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${
-                filter === 'all'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${filter === 'all'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               All
             </button>
             <button
               onClick={() => setFilter('open')}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${
-                filter === 'open'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${filter === 'open'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               Open
             </button>
             <button
               onClick={() => setFilter('assigned')}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${
-                filter === 'assigned'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${filter === 'assigned'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               Assigned
             </button>
             <button
               onClick={() => setFilter('resolved')}
-              className={`px-3 py-1 rounded-md text-sm font-medium ${
-                filter === 'resolved'
-                  ? 'bg-blue-600 text-white'
-                  : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+              className={`px-3 py-1 rounded-md text-sm font-medium ${filter === 'resolved'
+                ? 'bg-blue-600 text-white'
+                : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
+                }`}
             >
               Resolved
             </button>
@@ -197,17 +194,14 @@ export default function ComplaintsList({
       {/* Complaints List */}
       {complaints.length === 0 ? (
         <Card>
-          <CardContent className="p-8 text-center">
-            <div className="text-gray-400 text-4xl mb-4">📋</div>
-            <h3 className="text-lg font-medium text-gray-900 mb-2">
-              No complaints found
-            </h3>
-            <p className="text-gray-600">
-              {filter === 'all' 
+          <CardContent className="p-8">
+            <EmptyState
+              title="No complaints found"
+              description={filter === 'all'
                 ? 'No complaints have been submitted yet.'
                 : `No ${filter} complaints found.`
               }
-            </p>
+            />
           </CardContent>
         </Card>
       ) : (
@@ -222,10 +216,10 @@ export default function ComplaintsList({
                         {complaint.title}
                       </h3>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getPriorityColor(complaint.priority)}`}>
-                        {complaint.priority.toUpperCase()}
+                        {(complaint.priority || 'medium').toUpperCase()}
                       </span>
                       <span className={`px-2 py-1 rounded-full text-xs font-medium ${getStatusColor(complaint.status)}`}>
-                        {complaint.status.replace('_', ' ').toUpperCase()}
+                        {(complaint.status || 'open').replace('_', ' ').toUpperCase()}
                       </span>
                     </div>
                     <p className="text-sm text-gray-600 mb-2">

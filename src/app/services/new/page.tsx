@@ -28,34 +28,68 @@ interface ServiceType {
 
 export default function NewServicePage() {
   const router = useRouter();
-  const { user } = useAuthContext();
+  const { user, userProfile } = useAuthContext();
   const { success: showSuccess, error: showError } = useToast();
-  
+
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [serviceTypes, setServiceTypes] = useState<ServiceType[]>([]);
   const [isLoading, setIsLoading] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
-  
+  const [customerRecord, setCustomerRecord] = useState<any>(null);
+
   const [formData, setFormData] = useState({
     customer_id: '',
     service_type: '',
     description: '',
-    priority: 'medium',
     scheduled_date: '',
     estimated_hours: ''
   });
 
+  const isCustomer = userProfile?.role === 'customer';
+  const isStaff = ['admin', 'dept_head', 'service_manager'].includes(userProfile?.role || '');
+
   useEffect(() => {
-    loadCustomers();
+    if (isCustomer) {
+      // For customers, load their own customer record
+      loadOwnCustomerRecord();
+    } else if (isStaff) {
+      // For staff, load all customers
+      loadCustomers();
+    }
     loadServiceTypes();
-  }, []);
+  }, [isCustomer, isStaff]);
+
+  const loadOwnCustomerRecord = async () => {
+    try {
+      const response = await fetch(`/api/customers?user_id=${user?.id}`);
+      const result = await response.json();
+      if (response.ok && result.customers && result.customers.length > 0) {
+        const myCustomer = result.customers[0];
+        setCustomerRecord(myCustomer);
+        setFormData(prev => ({ ...prev, customer_id: myCustomer.id }));
+      } else {
+        showError({
+          title: 'Customer profile not found',
+          message: 'Please contact support to set up your customer profile.'
+        });
+      }
+    } catch (error) {
+      console.error('Failed to load customer record:', error);
+      showError({ title: 'Failed to load your profile' });
+    }
+  };
 
   const loadCustomers = async () => {
     try {
-      const response = await fetch('/api/customers');
+      // Fetch more customers by increasing limit
+      const response = await fetch('/api/customers?limit=100');
       const result = await response.json();
+      console.log('Customers API response:', result);
       if (response.ok) {
         setCustomers(result.customers || []);
+        console.log('Loaded customers:', result.customers?.length || 0);
+      } else {
+        console.error('Failed to load customers:', result.error);
       }
     } catch (error) {
       console.error('Failed to load customers:', error);
@@ -84,14 +118,14 @@ export default function NewServicePage() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
+
     if (!formData.customer_id || !formData.service_type || !formData.description) {
       showError({ title: 'Please fill in all required fields' });
       return;
     }
 
     setIsSubmitting(true);
-    
+
     try {
       const response = await fetch('/api/services', {
         method: 'POST',
@@ -122,6 +156,15 @@ export default function NewServicePage() {
   return (
     <div className="p-6 max-w-2xl mx-auto">
       <div className="mb-6">
+        <button
+          onClick={() => router.back()}
+          className="mb-4 flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+        >
+          <svg className="w-5 h-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
+          </svg>
+          Back to Services
+        </button>
         <h1 className="text-3xl font-bold text-gray-900">Create New Service</h1>
         <p className="text-gray-600 mt-2">Fill in the details to create a new service request</p>
       </div>
@@ -132,26 +175,40 @@ export default function NewServicePage() {
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
-            {/* Customer Selection */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Customer *
-              </label>
-              <select
-                name="customer_id"
-                value={formData.customer_id}
-                onChange={handleInputChange}
-                required
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="">Select a customer</option>
-                {customers.map((customer) => (
-                  <option key={customer.id} value={customer.id}>
-                    {customer.business_name} ({customer.customer_code})
-                  </option>
-                ))}
-              </select>
-            </div>
+            {/* Customer Selection - Only for Staff */}
+            {isStaff && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Customer *
+                </label>
+                <select
+                  name="customer_id"
+                  value={formData.customer_id}
+                  onChange={handleInputChange}
+                  required
+                  className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                >
+                  <option value="">Select a customer</option>
+                  {customers.map((customer) => (
+                    <option key={customer.id} value={customer.id}>
+                      {customer.business_name} ({customer.customer_code})
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
+            {/* Customer Info Display - For Customers */}
+            {isCustomer && customerRecord && (
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">
+                  Requesting Service For
+                </label>
+                <div className="w-full px-3 py-2 bg-gray-50 border border-gray-300 rounded-md text-gray-700">
+                  {customerRecord.business_name || 'Your Account'} ({customerRecord.customer_code || 'N/A'})
+                </div>
+              </div>
+            )}
 
             {/* Service Type */}
             <div>
@@ -190,23 +247,7 @@ export default function NewServicePage() {
               />
             </div>
 
-            {/* Priority */}
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">
-                Priority
-              </label>
-              <select
-                name="priority"
-                value={formData.priority}
-                onChange={handleInputChange}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
-              >
-                <option value="low">Low</option>
-                <option value="medium">Medium</option>
-                <option value="high">High</option>
-                <option value="urgent">Urgent</option>
-              </select>
-            </div>
+
 
             {/* Scheduled Date */}
             <div>
@@ -214,7 +255,7 @@ export default function NewServicePage() {
                 Scheduled Date
               </label>
               <Input
-                type="datetime-local"
+                type="date"
                 name="scheduled_date"
                 value={formData.scheduled_date}
                 onChange={handleInputChange}

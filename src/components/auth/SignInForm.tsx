@@ -36,19 +36,19 @@ export default function SignInForm() {
       const { data, error } = await signIn(email, password);
 
       if (error) {
-        console.error('🔑 Sign-in error:', error);
+        console.error('Sign-in error:', error);
         setMessage(`Error: ${error.message}`);
         setLoading(false);
         return;
       }
 
       if (data.user) {
-        setMessage('✅ Sign-in successful! Redirecting...');
-        // Fast redirect without refresh
-        router.replace('/dashboard');
+        setMessage('Sign-in successful! Redirecting...');
+        // Use router for client-side navigation
+        router.push('/dashboard');
       }
     } catch (error: any) {
-      console.error('🔑 Sign-in failed:', error);
+      console.error('Sign-in failed:', error);
       setMessage(`Error: ${error.message || 'Sign-in failed'}`);
     } finally {
       setLoading(false);
@@ -62,18 +62,11 @@ export default function SignInForm() {
           <div className="text-center">
             <h1 className="text-2xl font-bold">Welcome Back</h1>
             <p className="text-sm text-gray-500 mt-2">Sign in to Project Aqua</p>
-            <div className="mt-4 p-3 bg-blue-50 border border-blue-200 rounded text-sm">
-              <p className="font-semibold text-blue-800">Test Credentials:</p>
-              <p className="text-blue-700">Email: freakoffitnessig@gmail.com</p>
-              <p className="text-blue-700">Email: athri3nandan@gmail.com</p>
-              <p className="text-blue-700">Password: Use your actual password</p>
-            </div>
             {message && (
-              <div className={`mt-3 p-2 rounded text-sm ${
-                message.includes('Error') ? 'bg-red-100 text-red-700' : 
-                message.includes('✅') ? 'bg-green-100 text-green-700' : 
-                'bg-blue-100 text-blue-700'
-              }`}>
+              <div className={`mt-3 p-2 rounded text-sm ${message.includes('Error') ? 'bg-red-100 text-red-700' :
+                message.includes('✅') ? 'bg-green-100 text-green-700' :
+                  'bg-blue-100 text-blue-700'
+                }`}>
                 {message}
               </div>
             )}
@@ -103,8 +96,8 @@ export default function SignInForm() {
             />
 
             <div className="text-right">
-              <Link 
-                href="/reset-password" 
+              <Link
+                href="/reset-password"
                 className="text-sm text-blue-600 hover:underline"
               >
                 Forgot your password?

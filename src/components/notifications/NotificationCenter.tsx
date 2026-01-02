@@ -49,7 +49,7 @@ export const NotificationCenter: React.FC = () => {
   }, [user]);
   const loadNotifications = async () => {
     if (!user) return;
-    
+
     setIsLoading(true);
     try {
       const { data, error } = await supabase
@@ -285,7 +285,7 @@ export const NotificationCenter: React.FC = () => {
               <div>
                 <p className="text-sm text-gray-600">Today</p>
                 <p className="text-2xl font-bold text-blue-600">
-                  {notifications.filter(n => 
+                  {notifications.filter(n =>
                     new Date(n.created_at).toDateString() === new Date().toDateString()
                   ).length}
                 </p>
@@ -302,11 +302,10 @@ export const NotificationCenter: React.FC = () => {
             <button
               key={filterType}
               onClick={() => setFilter(filterType)}
-              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${
-                filter === filterType
+              className={`px-4 py-2 rounded-md text-sm font-medium transition-colors ${filter === filterType
                   ? 'bg-blue-600 text-white'
                   : 'bg-gray-200 text-gray-700 hover:bg-gray-300'
-              }`}
+                }`}
             >
               {filterType.replace('_', ' ').toUpperCase()}
             </button>
@@ -342,11 +341,10 @@ export const NotificationCenter: React.FC = () => {
           </Card>
         ) : (
           filteredNotifications.map((notification) => (
-            <Card 
-              key={notification.id} 
-              className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${
-                notification.is_read ? 'bg-gray-50' : 'bg-white'
-              } ${getPriorityColor(notification.priority)}`}
+            <Card
+              key={notification.id}
+              className={`hover:shadow-md transition-all cursor-pointer border-l-4 ${notification.is_read ? 'bg-gray-50' : 'bg-white'
+                } ${getPriorityColor(notification.priority)}`}
             >
               <CardContent className="p-6">
                 <div className="flex items-start justify-between">
@@ -367,7 +365,7 @@ export const NotificationCenter: React.FC = () => {
                       <div className="flex items-center gap-4 text-xs text-gray-500">
                         <span>{getTimeAgo(notification.created_at)}</span>
                         <span className={`px-2 py-1 rounded-full font-medium ${getPriorityColor(notification.priority)}`}>
-                          {notification.priority.toUpperCase()}
+                          {(notification.priority || 'medium').toUpperCase()}
                         </span>
                         <span className="capitalize">{notification.type}</span>
                       </div>

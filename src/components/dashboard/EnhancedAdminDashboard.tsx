@@ -33,28 +33,10 @@ export const EnhancedAdminDashboard: React.FC = () => {
   const [allData, setAllData] = useState<AllUserData | null>(null);
   const [activeTab, setActiveTab] = useState<'overview' | 'users' | 'complaints' | 'services' | 'export'>('overview');
   const [isExporting, setIsExporting] = useState(false);
-  const [signingOut, setSigningOut] = useState(false);
   useEffect(() => {
     loadAllData();
-    // Auto-refresh every 30 seconds for real-time data
-    const interval = setInterval(loadAllData, 30000);
-    return () => clearInterval(interval);
+    // Removed auto-refresh to prevent constant reloading
   }, []);
-  const handleSignOut = async () => {
-    try {
-      setSigningOut(true);
-      const { error: signOutError } = await supabase.auth.signOut();
-      if (signOutError) {
-        throw signOutError;
-      }
-      success({ title: 'Signed out successfully' });
-      router.replace('/');
-    } catch (err: any) {
-      error({ title: 'Sign out failed', message: err.message });
-    } finally {
-      setSigningOut(false);
-    }
-  };
   const loadAllData = async () => {
     try {
       setIsLoading(true);
@@ -65,10 +47,10 @@ export const EnhancedAdminDashboard: React.FC = () => {
       }
       setAllData(data);
     } catch (err: any) {
-      console.error('❌ Error loading dashboard data:', err);
-      error({ 
-        title: 'Failed to load dashboard data', 
-        message: `${err.message}. Please check your internet connection and try again.` 
+      console.error('Error loading dashboard data:', err);
+      error({
+        title: 'Failed to load dashboard data',
+        message: `${err.message}. Please check your internet connection and try again.`
       });
       // Set empty state instead of mock data
       setAllData({
@@ -99,15 +81,15 @@ export const EnhancedAdminDashboard: React.FC = () => {
       const filename = `${type}_export_${new Date().toISOString().split('T')[0]}.${format}`;
       // Simulate export delay
       await new Promise(resolve => setTimeout(resolve, 1000));
-      success({ 
-        title: `${type.toUpperCase()} Export Complete!`, 
-        message: `Mock export for ${filename} completed` 
+      success({
+        title: `${type.toUpperCase()} Export Complete!`,
+        message: `Mock export for ${filename} completed`
       });
     } catch (err: any) {
-      console.error('❌ Export error:', err);
-      error({ 
-        title: 'Export Failed', 
-        message: err.message || 'Unknown error occurred' 
+      console.error('Export error:', err);
+      error({
+        title: 'Export Failed',
+        message: err.message || 'Unknown error occurred'
       });
     } finally {
       setIsExporting(false);
@@ -159,15 +141,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
               size="sm"
               disabled={isLoading}
             >
-              {isLoading ? '⏳ Loading...' : '🔄 Refresh'}
-            </Button>
-            <Button
-              onClick={handleSignOut}
-              variant="danger"
-              size="sm"
-              disabled={signingOut}
-            >
-              {signingOut ? 'Signing out...' : '🚪 Sign Out'}
+              {isLoading ? 'Loading...' : 'Refresh'}
             </Button>
           </div>
         </div>
@@ -206,22 +180,20 @@ export const EnhancedAdminDashboard: React.FC = () => {
         <div className="border-b border-gray-200">
           <nav className="-mb-px flex space-x-8 px-6">
             {[
-              { id: 'overview', label: 'Overview', icon: '📊' },
-              { id: 'users', label: 'Users', icon: '👥' },
-              { id: 'complaints', label: 'Complaints', icon: '📝' },
-              { id: 'services', label: 'Services', icon: '🔧' },
-              { id: 'export', label: 'Export', icon: '📤' }
+              { id: 'overview', label: 'Overview', icon: '' },
+              { id: 'users', label: 'Users', icon: '' },
+              { id: 'complaints', label: 'Complaints', icon: '' },
+              { id: 'services', label: 'Services', icon: '' },
+              { id: 'export', label: 'Export', icon: '' }
             ].map(tab => (
               <button
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id as any)}
-                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${
-                  activeTab === tab.id
-                    ? 'border-blue-500 text-blue-600'
-                    : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
-                }`}
+                className={`py-4 px-1 border-b-2 font-medium text-sm transition-colors ${activeTab === tab.id
+                  ? 'border-blue-500 text-blue-600'
+                  : 'border-transparent text-gray-500 hover:text-gray-700 hover:border-gray-300'
+                  }`}
               >
-                <span className="mr-2">{tab.icon}</span>
                 {tab.label}
               </button>
             ))}
@@ -237,12 +209,18 @@ export const EnhancedAdminDashboard: React.FC = () => {
               <div className="p-6">
                 <h3 className="text-lg font-semibold mb-4">User Roles</h3>
                 <div className="space-y-3">
-                  {Object.entries(allData.stats.roleBreakdown).map(([role, count]) => (
-                    <div key={role} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
-                      <div className="font-medium capitalize">{role.replace('_', ' ')}</div>
-                      <div className="text-lg font-bold">{count}</div>
+                  {allData.stats.roleBreakdown && Object.entries(allData.stats.roleBreakdown).length > 0 ? (
+                    Object.entries(allData.stats.roleBreakdown).map(([role, count]) => (
+                      <div key={role} className="flex items-center justify-between p-3 bg-gray-50 rounded-lg">
+                        <div className="font-medium capitalize">{role.replace('_', ' ')}</div>
+                        <div className="text-lg font-bold">{count}</div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="text-center py-8 text-gray-500">
+                      No role data available
                     </div>
-                  ))}
+                  )}
                 </div>
               </div>
             </Card>
@@ -253,22 +231,22 @@ export const EnhancedAdminDashboard: React.FC = () => {
                 <div className="grid grid-cols-2 gap-3">
                   <Link href="/admin/users">
                     <Button className="w-full" variant="outline">
-                      👥 Manage Users
+                      Manage Users
                     </Button>
                   </Link>
                   <Link href="/complaints">
                     <Button className="w-full" variant="outline">
-                      📝 View Complaints
+                      View Complaints
                     </Button>
                   </Link>
                   <Link href="/services">
                     <Button className="w-full" variant="outline">
-                      🔧 View Services
+                      View Services
                     </Button>
                   </Link>
                   <Link href="/reports">
                     <Button className="w-full" variant="outline">
-                      📊 View Reports
+                      View Reports
                     </Button>
                   </Link>
                 </div>
@@ -280,10 +258,10 @@ export const EnhancedAdminDashboard: React.FC = () => {
           <Card>
             <div className="p-6">
               <div className="flex items-center justify-between mb-4">
-                <h3 className="text-lg font-semibold">All Users ({allData.users.length})</h3>
+                <h3 className="text-lg font-semibold">All Users ({allData?.users?.length || 0})</h3>
                 <Link href="/admin/users/new">
                   <Button size="sm" className="bg-blue-600 hover:bg-blue-700">
-                    ➕ Add User
+                    Add User
                   </Button>
                 </Link>
               </div>
@@ -299,15 +277,14 @@ export const EnhancedAdminDashboard: React.FC = () => {
                     </tr>
                   </thead>
                   <tbody>
-                    {allData.users.slice(0, 10).map(user => (
+                    {(allData?.users || []).slice(0, 10).map(user => (
                       <tr key={user.id} className="border-b hover:bg-gray-50">
                         <td className="p-2 font-medium">{user.full_name || 'N/A'}</td>
                         <td className="p-2">{user.email}</td>
                         <td className="p-2 capitalize">{user.role?.replace('_', ' ')}</td>
                         <td className="p-2">
-                          <span className={`px-2 py-1 rounded-full text-xs ${
-                            user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
-                          }`}>
+                          <span className={`px-2 py-1 rounded-full text-xs ${user.is_active ? 'bg-green-100 text-green-800' : 'bg-red-100 text-red-800'
+                            }`}>
                             {user.is_active ? 'Active' : 'Inactive'}
                           </span>
                         </td>
@@ -323,9 +300,9 @@ export const EnhancedAdminDashboard: React.FC = () => {
         {activeTab === 'complaints' && allData && (
           <Card>
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Complaints ({allData.complaints.length})</h3>
+              <h3 className="text-lg font-semibold mb-4">Recent Complaints ({allData?.complaints?.length || 0})</h3>
               <div className="space-y-4">
-                {allData.complaints.slice(0, 10).map(complaint => (
+                {(allData?.complaints || []).slice(0, 10).map(complaint => (
                   <div key={complaint.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
@@ -344,7 +321,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
                     )}
                   </div>
                 ))}
-                {allData.complaints.length === 0 && (
+                {(!allData?.complaints || allData.complaints.length === 0) && (
                   <div className="text-center py-8 text-gray-500">
                     No complaints found
                   </div>
@@ -356,9 +333,9 @@ export const EnhancedAdminDashboard: React.FC = () => {
         {activeTab === 'services' && allData && (
           <Card>
             <div className="p-6">
-              <h3 className="text-lg font-semibold mb-4">Recent Services ({allData.services.length})</h3>
+              <h3 className="text-lg font-semibold mb-4">Recent Services ({allData?.services?.length || 0})</h3>
               <div className="space-y-4">
-                {allData.services.slice(0, 10).map(service => (
+                {(allData?.services || []).slice(0, 10).map(service => (
                   <div key={service.id} className="border border-gray-200 rounded-lg p-4">
                     <div className="flex items-center justify-between mb-2">
                       <div className="flex items-center space-x-3">
@@ -377,7 +354,7 @@ export const EnhancedAdminDashboard: React.FC = () => {
                     )}
                   </div>
                 ))}
-                {allData.services.length === 0 && (
+                {(!allData?.services || allData.services.length === 0) && (
                   <div className="text-center py-8 text-gray-500">
                     No services found
                   </div>

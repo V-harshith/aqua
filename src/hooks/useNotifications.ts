@@ -23,11 +23,20 @@ export function useNotifications() {
 
     try {
       setIsLoading(true);
+
+      // Check if session exists before making request
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session) {
+        console.log('No session available, skipping notifications load');
+        return;
+      }
+
       const data = await authenticatedGet('/api/notifications?limit=10');
       setNotifications(data.notifications || []);
       setUnreadCount(data.unreadCount || 0);
     } catch (error) {
       console.error('Failed to load notifications:', error);
+      // Don't throw, just log - notifications are not critical
     } finally {
       setIsLoading(false);
     }
@@ -71,7 +80,7 @@ export function useNotifications() {
           setNotifications(prev =>
             prev.map(n => n.id === updatedNotification.id ? updatedNotification : n)
           );
-          
+
           // Update unread count
           if (updatedNotification.is_read && !payload.old?.is_read) {
             setUnreadCount(prev => Math.max(0, prev - 1));

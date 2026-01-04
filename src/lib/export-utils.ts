@@ -1,4 +1,6 @@
-// Utility function for exporting data - add this to EnhancedAdminDashboard
+import { supabase } from './supabase';
+
+// Utility function for exporting data from Enhanced Admin Dashboard
 export async function exportDataToFile(type: string, format: 'csv' | 'json' = 'csv') {
     try {
         // Get session token
@@ -37,23 +39,3 @@ export async function exportDataToFile(type: string, format: 'csv' | 'json' = 'c
         throw error;
     }
 }
-
-// Replace line 77-97 in EnhancedAdminDashboard.tsx with:
-const exportData = async (type: string, format: 'csv' | 'json' = 'csv') => {
-    try {
-        setIsExporting(true);
-        const filename = await exportDataToFile(type, format);
-        success({
-            title: `${type.toUpperCase()} Export Complete!`,
-            message: `Downloaded ${filename}`
-        });
-    } catch (err: any) {
-        console.error('Export error:', err);
-        error({
-            title: 'Export Failed',
-            message: err.message || 'Unknown error occurred'
-        });
-    } finally {
-        setIsExporting(false);
-    }
-};
